@@ -18,4 +18,9 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Sprint 2 (item-004): Api project reference enables Aspire source generation of Projects.AdventureEngine_Api -->
+    <ProjectReference Include="../Api/AdventureEngine.Api.csproj" />
+  </ItemGroup>
 </Project>

@@ -3,6 +3,9 @@
   <Folder Name="/apps/AppHost/">
     <Project Path="apps/AppHost/AdventureEngine.AppHost.csproj" />
   </Folder>
+  <Folder Name="/apps/Api/">
+    <Project Path="apps/Api/AdventureEngine.Api.csproj" />
+  </Folder>
   <Folder Name="/apps/Api.Tests/">
     <Project Path="apps/Api.Tests/AdventureEngine.Api.Tests.csproj" />
   </Folder>

@@ -35,6 +35,9 @@ launchSettings.json
 # required for the Aspire dashboard to start. It must be committed so `dotnet run` works
 # on any developer machine without a manual setup step.
 !apps/AppHost/Properties/launchSettings.json
+# The Api launchSettings.json sets ASPNETCORE_ENVIRONMENT=Development so that health
+# endpoints and OpenAPI/Scalar UI are active when running the API standalone (without Aspire).
+!apps/Api/Properties/launchSettings.json
 .aspire/
 
 # NuGet packages — packages.lock.json files MUST be committed (used for CI --locked-mode)
