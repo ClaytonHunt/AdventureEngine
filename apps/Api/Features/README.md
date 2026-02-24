@@ -26,3 +26,12 @@ Register in `Program.cs` and inject via constructor or endpoint handler paramete
 All endpoints **must** include `summary` and `description` in their route group or
 `WithOpenApi()` call. These fields are the primary accessibility surface for the Scalar UI
 and are treated as required — not optional.
+
+## Deployment Notes
+
+- **AllowedHosts** is set to `localhost` in `appsettings.json`. Override this to the actual
+  production hostname in your deployment environment configuration (environment variable or
+  `appsettings.Production.json`). Never leave it as `*` in production — host header injection
+  attacks become possible against named virtual hosts.
+- **OpenAPI / Scalar UI** are guarded by `IsDevelopment()` in `Program.cs` and will not be
+  exposed in production builds.
