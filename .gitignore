@@ -31,6 +31,10 @@ appsettings.Development.json
 appsettings.*.json
 !appsettings.json
 launchSettings.json
+# The AppHost launchSettings.json is not a secret — it contains only localhost ports
+# required for the Aspire dashboard to start. It must be committed so `dotnet run` works
+# on any developer machine without a manual setup step.
+!apps/AppHost/Properties/launchSettings.json
 .aspire/
 
 # NuGet packages — packages.lock.json files MUST be committed (used for CI --locked-mode)
