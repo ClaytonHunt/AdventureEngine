@@ -70,6 +70,11 @@ dotnet run --project apps/AppHost
 pnpm start
 ```
 
+> **Note:** The `apps/AppHost/Properties/launchSettings.json` file is intentionally
+> committed to the repo. It contains only localhost port numbers and is the standard
+> mechanism by which .NET Aspire injects its dashboard environment variables.
+> Do not delete it or add it to `.gitignore`.
+
 ---
 
 ## Running Tests
@@ -114,8 +119,33 @@ src/components/
 
 - **Never commit** `appsettings.*.json` (except the base `appsettings.json`)
 - **Never commit** `.env`, `.env.local`, or any `.env.*` files
-- **Never commit** `launchSettings.json`
+- **Never commit** `launchSettings.json` for service/API projects (use `.gitignore` — these
+  files may contain machine-specific ports or connection strings). The **only exception** is
+  `apps/AppHost/Properties/launchSettings.json`, which is intentionally committed (see
+  [Lessons Learned](#lessons-learned) below).
 - **Never commit** user secrets (`~/.microsoft/usersecrets/` or `%APPDATA%\Microsoft\UserSecrets\`)
 - **Never expose** the Aspire dashboard on a non-loopback network interface
 - Run `dotnet list package --vulnerable` periodically to check for CVEs in NuGet dependencies
 - Run `pnpm audit` periodically to check for CVEs in npm dependencies
+
+---
+
+## Lessons Learned
+
+### Aspire AppHost and `launchSettings.json`
+
+Unlike standard ASP.NET Core projects, **.NET Aspire AppHost requires**
+`Properties/launchSettings.json` to be present and committed. This file is the sole mechanism
+for injecting:
+
+- `ASPNETCORE_URLS` — derived from the `applicationUrl` field by `dotnet run`
+- `ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL` — gRPC OTLP endpoint for the Aspire dashboard
+- `ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL` — HTTP OTLP endpoint for the Aspire dashboard
+
+None of these are injected by the Aspire SDK `.targets` files or NuGet packages. Excluding this
+file from git (e.g. via a blanket `launchSettings.json` rule in `.gitignore`) will cause
+`dotnet run --project apps/AppHost` to crash immediately with an `OptionsValidationException`
+thrown by `DashboardEventHandlers.OnBeforeStartAsync`.
+
+**Rule:** Commit `apps/AppHost/Properties/launchSettings.json`. For all other projects,
+`launchSettings.json` should remain gitignored.
