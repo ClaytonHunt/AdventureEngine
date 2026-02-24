@@ -109,6 +109,8 @@ interface WorkflowState {
 	extra_skills?: string[];
 	next: string[];
 	requires_approval?: boolean;
+	// Hard cap on how long this state may run (default: 15 min)
+	timeout_minutes?: number;
 }
 
 interface WorkflowDef {
@@ -128,6 +130,7 @@ interface StateRecord {
 	elapsed: number;
 	taskGiven: string;
 	outputPreview: string;
+	exitCode?: number;    // 0 = success, non-zero = error, undefined = legacy record
 }
 
 interface Snapshot {
@@ -145,6 +148,7 @@ interface Ledger {
 	created: number;
 	lastUpdated: number;
 	currentState: string;
+	currentStateTask: string;   // task given to the currently-running agent (persisted for resume)
 	initialTask: string;
 	history: StateRecord[];
 	snapshot: Snapshot;
@@ -630,7 +634,9 @@ function spawnStateAgent(
 	sessDir: string,
 	stateKey: string,
 	ledgerId: string,
+	timeoutMs: number,
 	onProgress: (text: string) => void,
+	onSpawn: (proc: ReturnType<typeof spawn>) => void,
 ): Promise<SpawnResult> {
 	const agentSessionFile = join(sessDir, `state-${ledgerId}-${stateKey}.json`);
 
@@ -688,6 +694,19 @@ function spawnStateAgent(
 			env: { ...process.env },
 		});
 
+		// Expose proc so /chronicle-kill can abort it
+		onSpawn(proc);
+
+		// Hard timeout — kills the subprocess if it hasn't exited naturally.
+		// Sub-agents can run bash; without this, a hanging command (dev server,
+		// interactive test runner, etc.) stalls the workflow indefinitely.
+		let timedOut = false;
+		const killTimer = setTimeout(() => {
+			timedOut = true;
+			try { proc.kill("SIGTERM"); } catch {}
+			setTimeout(() => { try { proc.kill("SIGKILL"); } catch {} }, 5000);
+		}, timeoutMs);
+
 		let buffer = "";
 
 		proc.stdout!.setEncoding("utf-8");
@@ -724,6 +743,8 @@ function spawnStateAgent(
 		proc.stderr!.on("data", (chunk: string) => stderrChunks.push(chunk));
 
 		proc.on("close", (code) => {
+			clearTimeout(killTimer);
+			onSpawn(null as any); // clear the external ref
 			try { unlinkSync(contextFile); } catch {}
 
 			if (buffer.trim()) {
@@ -738,15 +759,20 @@ function spawnStateAgent(
 
 			const fullOutput = textChunks.join("");
 			const stderr = stderrChunks.join("").trim();
+			const timeoutNote = timedOut
+				? `\n\n⏱ Agent timed out after ${Math.round(timeoutMs / 60000)} minutes and was killed. Partial output above.`
+				: "";
 			resolve({
-				output: fullOutput || (code !== 0 && stderr ? `[exit ${code}] ${stderr}` : ""),
-				exitCode: code ?? 1,
+				output: (fullOutput || (code !== 0 && stderr ? `[exit ${code}] ${stderr}` : "")) + timeoutNote,
+				exitCode: timedOut ? 124 : (code ?? 1),
 				elapsed: Date.now() - startTime,
 				tokensUsed,
 			});
 		});
 
 		proc.on("error", (err: Error) => {
+			clearTimeout(killTimer);
+			onSpawn(null as any);
 			try { unlinkSync(contextFile); } catch {}
 			resolve({
 				output: `Error spawning agent: ${err.message}`,
@@ -770,6 +796,8 @@ export default function (pi: ExtensionAPI) {
 	let cwd = "";
 	let widgetCtx: any;
 	let gridCols = 4;
+	let currentAgentProc: ReturnType<typeof spawn> | null = null;
+	const DEFAULT_TIMEOUT_MINUTES = 15;
 
 	// Per-state card tracking — one entry per workflow state
 	interface StateCard {
@@ -801,17 +829,20 @@ export default function (pi: ExtensionAPI) {
 
 	function restoreStateCards(workflowDef: WorkflowDef, history: StateRecord[], currentState: string) {
 		initStateCards(workflowDef);
-		// Mark all history states done
+		// Replay history in order — later entries for the same state overwrite earlier
+		// ones, so retried states end up showing their most recent run's data.
 		for (const h of history) {
 			const card = stateCards.get(h.state);
 			if (card) {
-				card.status = "done";
-				card.agentName = h.agentName;
-				card.elapsed = h.elapsed;
+				card.status   = (h.exitCode === 0 || h.exitCode === undefined) ? "done" : "error";
+				card.agentName  = h.agentName;
+				card.elapsed    = h.elapsed;
 				card.tokensUsed = h.tokensUsed;
+				card.lastLine   = h.outputPreview || "";
 			}
 		}
-		// Current state is idle (was paused)
+		// currentState overrides whatever history said — it's the state that was
+		// running (or paused) when the session was interrupted.
 		const current = stateCards.get(currentState);
 		if (current) current.status = "pending";
 	}
@@ -892,9 +923,12 @@ export default function (pi: ExtensionAPI) {
 					// Stats header
 					const runningCard = cards.find(c => c.status === "running");
 					const totalElapsed = (ledger?.totalElapsed ?? 0) + (runningCard?.elapsed ?? 0);
+					const uniqueDone = new Set(ledger!.history.map(h => h.state)).size;
+					const totalRuns  = ledger!.history.length;
+					const retryNote  = totalRuns > uniqueDone ? ` +${totalRuns - uniqueDone}↺` : "";
 					const statsLine = [
 						theme.fg("dim", `📜 ${ledger!.workflowName}`),
-						theme.fg("dim", ` · ${ledger!.history.length}/${cards.length} states`),
+						theme.fg("dim", ` · ${uniqueDone}/${cards.length} states${retryNote}`),
 						theme.fg("dim", ` · ${ledger!.totalTokens.toLocaleString()} tokens`),
 						theme.fg("dim", ` · ${fmtElapsed(totalElapsed)}`),
 					].join("");
@@ -1020,29 +1054,17 @@ export default function (pi: ExtensionAPI) {
 				projectSettings, projectSkillNames,
 			);
 
-			// Update card states — capture BEFORE changing ledger.currentState
+			// Stop the previous card's timer.
+			// Do NOT force its status to "done" — it already reflects what actually
+			// happened (done / error / timeout).  The supervisor calling
+			// workflow_transition is the signal to move on, not to retroactively
+			// mark the previous state as successful.
 			const prevCard = stateCards.get(ledger.currentState);
-			if (prevCard) {
-				prevCard.status = "done";
-				stopCardTimer(ledger.currentState);
-			}
+			if (prevCard) stopCardTimer(ledger.currentState);
 
-			// Save current state to history
-			const prevRecord: StateRecord = {
-				state: ledger.currentState,
-				agentName: prevCard?.agentName || "(supervisor)",
-				startedAt: prevCard?.startedAt || ledger.lastUpdated,
-				completedAt: Date.now(),
-				summary,
-				tokensUsed: 0,
-				elapsed: prevCard?.elapsed || 0,
-				taskGiven: "",
-				outputPreview: summary.slice(0, 300),
-			};
-			ledger.history.push(prevRecord);
-
-			// Transition
+			// Transition — save the task so it's persisted for resume
 			ledger.currentState = to_state;
+			ledger.currentStateTask = task;
 			ledger.status = "running";
 			saveLedger(sessDir, ledger);
 
@@ -1074,28 +1096,101 @@ export default function (pi: ExtensionAPI) {
 				? `${ctx.model.provider}/${ctx.model.id}`
 				: "openrouter/google/gemini-2.5-flash-preview";
 
+			const timeoutMs = (targetStateDef.timeout_minutes ?? DEFAULT_TIMEOUT_MINUTES) * 60 * 1000;
+
 			const result = await spawnStateAgent(
 				resolved, model, sessDir, to_state, ledger.id,
+				timeoutMs,
 				(progress) => {
 					const card = stateCards.get(to_state);
 					if (card) { card.lastLine = progress; updateWidget(); }
 				},
+				(proc) => { currentAgentProc = proc; },
 			);
 
 			stopCardTimer(to_state);
 			const doneCard = stateCards.get(to_state);
 			if (doneCard) {
-				doneCard.status = result.exitCode === 0 ? "done" : "error";
+				doneCard.status = result.exitCode === 0 ? "done"
+					: result.exitCode === 124 ? "error"
+					: "error";
 				doneCard.tokensUsed = result.tokensUsed;
 				doneCard.elapsed = result.elapsed;
-				doneCard.lastLine = result.output.split("\n").filter(l => l.trim()).pop() || "";
+				doneCard.lastLine = result.exitCode === 124
+					? `⏱ timed out after ${Math.round(result.elapsed / 60000)}m`
+					: (result.output.split("\n").filter(l => l.trim()).pop() || "");
 			}
 
-			// Finalize history record
-			prevRecord.tokensUsed = result.tokensUsed;
-			prevRecord.taskGiven = task;
+			// Always accumulate totals
 			ledger.totalTokens += result.tokensUsed;
 			ledger.totalElapsed += result.elapsed;
+
+			// ── Timeout: pause workflow and surface to user ───────────────────
+			if (result.exitCode === 124) {
+				ledger.status = "paused";
+
+				// Preserve whatever the agent produced — the next attempt or the
+				// skip path both benefit from having partial findings in context.
+				const partialPreview = result.output.slice(0, 1200).trim();
+				if (partialPreview) {
+					ledger.snapshot.keyFindings.push(
+						`[Partial – ${displayName(to_state)} timed out] ${partialPreview}`,
+					);
+				}
+
+				saveLedger(sessDir, ledger);
+				updateWidget();
+
+				const timeoutMins = Math.round(result.elapsed / 60000);
+				const partialSection = partialPreview
+					? `\n\n**Partial output captured** (saved to snapshot):\n${partialPreview.slice(0, 500)}...`
+					: "\n\n*(No output was captured before the timeout.)*";
+
+				return {
+					content: [{
+						type: "text",
+						text:
+							`⏱ **${displayName(to_state)}** [${resolved.agentName}] timed out after ${timeoutMins} minutes.\n\n` +
+							`The workflow is now **PAUSED** at this state. ` +
+							`The agent did not finish — advancing without its output would compromise workflow integrity.\n` +
+							partialSection +
+							`\n\n---\n` +
+							`**Please ask the user what they want to do:**\n\n` +
+							`- **Retry** — run this state again (the agent will start fresh, partial findings are in the snapshot)\n` +
+							`- **Skip** — advance past this state; call \`workflow_update_snapshot\` first to note it was skipped, then \`workflow_transition\` to the next state\n` +
+							`- **Abort** — end the workflow\n\n` +
+							`Current state remains: **${displayName(to_state)}**`,
+					}],
+					details: {
+						to_state, task, status: "timed_out",
+						agent: resolved.agentName,
+						elapsed: result.elapsed,
+						tokensUsed: result.tokensUsed,
+					},
+				};
+			}
+
+			// ── Normal completion (success or non-timeout error) ──────────────
+			// Push THIS state's record to history now that its agent has finished.
+			// We record it here — after the run — so:
+			//   • tokensUsed and elapsed are the real numbers from this agent
+			//   • taskGiven is the task this agent actually received
+			//   • backwards transitions (retries) produce separate records per run
+			//   • resume/continues load correct per-state data from disk
+			const completedAt = Date.now();
+			const record: StateRecord = {
+				state: to_state,
+				agentName: resolved.agentName,
+				startedAt: targetCard?.startedAt || (completedAt - result.elapsed),
+				completedAt,
+				summary,
+				tokensUsed: result.tokensUsed,
+				elapsed: result.elapsed,
+				taskGiven: task,
+				outputPreview: result.output.slice(0, 300),
+				exitCode: result.exitCode,
+			};
+			ledger.history.push(record);
 
 			if (targetStateDef.next.length === 0 || to_state === "done") {
 				ledger.status = "done";
@@ -1366,6 +1461,7 @@ export default function (pi: ExtensionAPI) {
 				created: Date.now(),
 				lastUpdated: Date.now(),
 				currentState: workflow.initial,
+				currentStateTask: "",
 				initialTask: "",
 				history: [],
 				snapshot: { modifiedFiles: [], keyFindings: [], pendingTasks: [], custom: {} },
@@ -1452,6 +1548,26 @@ export default function (pi: ExtensionAPI) {
 			});
 
 			ctx.ui.notify(`Chronicle Sessions (${all.length}):\n\n${lines.join("\n")}`, "info");
+		},
+	});
+
+	pi.registerCommand("chronicle-kill", {
+		description: "Kill the currently running sub-agent (use if an agent is stuck)",
+		handler: async (_args, ctx) => {
+			widgetCtx = ctx;
+			if (!currentAgentProc) {
+				ctx.ui.notify("No sub-agent is currently running.", "info");
+				return;
+			}
+			try {
+				currentAgentProc.kill("SIGTERM");
+				setTimeout(() => {
+					try { currentAgentProc?.kill("SIGKILL"); } catch {}
+				}, 3000);
+				ctx.ui.notify("⏹ Kill signal sent to sub-agent. It will exit within a few seconds.", "warning");
+			} catch (e: any) {
+				ctx.ui.notify(`Kill failed: ${e.message}`, "error");
+			}
 		},
 	});
 
