@@ -7,6 +7,10 @@ public sealed class EntityTests
 {
     private sealed class TestEntity(Guid id) : Entity<Guid>(id);
 
+    // Two distinct entity types sharing the same TId — used for cross-type tests
+    private sealed class OrderEntity(Guid id) : Entity<Guid>(id);
+    private sealed class CustomerEntity(Guid id) : Entity<Guid>(id);
+
     [Fact]
     public void Entities_WithSameId_AreEqual()
     {
@@ -29,12 +33,21 @@ public sealed class EntityTests
     }
 
     [Fact]
-    public void Entity_GetHashCode_IsBasedOnId()
+    public void Entity_GetHashCode_IncludesTypeAndId()
     {
         var id = Guid.NewGuid();
         var entity = new TestEntity(id);
 
-        entity.GetHashCode().Should().Be(id.GetHashCode());
+        // Hash must incorporate both GetType() and Id — not just Id alone
+        entity.GetHashCode().Should().Be(HashCode.Combine(typeof(TestEntity), id));
+    }
+
+    [Fact]
+    public void Entity_GetHashCode_IsConsistentForSameInstance()
+    {
+        var entity = new TestEntity(Guid.NewGuid());
+
+        entity.GetHashCode().Should().Be(entity.GetHashCode());
     }
 
     [Fact]
@@ -58,5 +71,40 @@ public sealed class EntityTests
         var entity = new TestEntity(Guid.NewGuid());
 
         entity.Equals("not an entity").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Entities_OfDifferentConcreteTypes_WithSameId_AreNotEqual()
+    {
+        // Order(id=X) must NOT equal Customer(id=X) — they are different domain concepts
+        var sharedId = Guid.NewGuid();
+        var order = new OrderEntity(sharedId);
+        var customer = new CustomerEntity(sharedId);
+
+        order.Should().NotBe(customer);
+        (order == customer).Should().BeFalse();
+    }
+
+    [Fact]
+    public void Entities_OfDifferentConcreteTypes_WithSameId_HaveDifferentHashCodes()
+    {
+        // Different types with same Id must NOT produce the same hash code.
+        // Equal hash codes are allowed by contract but would cause systematic
+        // performance degradation in HashSet/Dictionary — verify they are distinct.
+        var sharedId = Guid.NewGuid();
+        var order = new OrderEntity(sharedId);
+        var customer = new CustomerEntity(sharedId);
+
+        order.GetHashCode().Should().NotBe(customer.GetHashCode());
+    }
+
+    [Fact]
+    public void Entities_SameType_SameId_HaveSameHashCode()
+    {
+        var id = Guid.NewGuid();
+        var a = new TestEntity(id);
+        var b = new TestEntity(id);
+
+        a.GetHashCode().Should().Be(b.GetHashCode());
     }
 }
