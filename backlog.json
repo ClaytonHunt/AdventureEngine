@@ -1,0 +1,431 @@
+[
+  {
+    "id": "item-001",
+    "title": "Scaffold monorepo folder structure + root package.json",
+    "description": "Create the top-level monorepo skeleton: root package.json with pnpm workspaces, workspace scripts (start, test, test:e2e, test:api, storybook, build), .gitignore, .nvmrc / .node-version, and the empty top-level directories (apps/, src/ or chosen convention). This is the foundation every other item depends on.",
+    "acceptanceCriteria": [
+      "Root package.json exists with 'name', 'private: true', 'workspaces', and placeholder scripts: start, test, test:e2e, test:api, storybook, build.",
+      "pnpm-workspace.yaml lists all workspace globs (e.g. apps/*).",
+      ".gitignore covers node_modules, .env, bin/obj, .aspire, dist, .playwright.",
+      "Running 'pnpm install' at repo root completes without errors.",
+      "Top-level directory tree matches the agreed folder convention (apps/ or src/ \u00e2\u20ac\u201d see pre-sprint decision #1).",
+      "A CONTRIBUTING.md stub or inline comment documents the chosen folder convention."
+    ],
+    "size": 2,
+    "priority": 1,
+    "status": "ready",
+    "tags": [
+      "monorepo",
+      "scaffold",
+      "chore"
+    ],
+    "dependencies": []
+  },
+  {
+    "id": "item-002",
+    "title": "Create SharedKernel C# class library with DDD building blocks",
+    "description": "Add a SharedKernel C# class library project to the solution under packages/SharedKernel/. Implement abstract base classes and interfaces used across all vertical slices: Entity<TId>, ValueObject, AggregateRoot<TId>, IDomainEvent, IDomainEventContainer, IRepository<T,TId>, IUnitOfWork, Result<T>, Result (non-generic), and Error. No business logic \u00e2\u20ac\u201d only structural contracts. Includes a SharedKernel.Tests xUnit project with full test coverage of all base types.",
+    "acceptanceCriteria": [
+      "SharedKernel.csproj exists as a class library targeting net9.0.",
+      "Entity<TId> exists with identity-based equality and implements IEquatable<Entity<TId>>.",
+      "ValueObject exists with structural equality via GetEqualityComponents() using the HashCode.Add() pattern.",
+      "AggregateRoot<TId> extends Entity<TId>, implements IDomainEventContainer, holds IReadOnlyList<IDomainEvent> with cached ReadOnlyCollection wrapper.",
+      "IDomainEvent is a plain marker interface (NOT an abstract record, NOT a class) with Guid EventId and DateTimeOffset OccurredOn.",
+      "IDomainEventContainer interface exposes IReadOnlyList<IDomainEvent> DomainEvents and void ClearDomainEvents() for infrastructure access.",
+      "IRepository<T, TId> interface exists with methods GetByIdAsync, AddAsync, UpdateAsync, DeleteAsync \u00e2\u20ac\u201d NO SaveChangesAsync.",
+      "IUnitOfWork interface exists with Task<int> SaveChangesAsync(CancellationToken ct = default).",
+      "Result<T> (generic) exists as a sealed class with IsSuccess, IsFailure, Value, Error, implicit operators from T and Error, and Match<TOut>() method.",
+      "Result (non-generic) exists as a sealed class for void operations with IsSuccess, IsFailure, Error, implicit operator from Error, and Match<TOut>() method.",
+      "Error is a sealed record with Code, Message, and optional InternalDetail \u00e2\u20ac\u201d static factories: NotFound, Validation, Conflict, Unexpected.",
+      "All types have XML doc comments summarising their intent.",
+      "dotnet build on the SharedKernel project produces zero warnings and zero errors.",
+      "SharedKernel has no dependencies on any other project in the solution.",
+      "SharedKernel.Tests xUnit project exists with tests covering: Entity equality, ValueObject equality, AggregateRoot domain event lifecycle, IDomainEventContainer implementation, Result<T> success/failure/match paths, non-generic Result, all Error factory methods including InternalDetail."
+    ],
+    "size": 2,
+    "priority": 2,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "architecture",
+      "ddd"
+    ],
+    "dependencies": [
+      "item-001"
+    ]
+  },
+  {
+    "id": "item-003",
+    "title": "Set up .NET Aspire AppHost and ServiceDefaults",
+    "description": "Add the .NET Aspire AppHost project (apps/AppHost/) and the ServiceDefaults project (packages/ServiceDefaults/) to the solution. ServiceDefaults adds OpenTelemetry, health check endpoints, and resilience defaults via extension methods. AppHost is minimal for Sprint 1 \u2014 no services wired yet (API comes in Sprint 2 item-004).",
+    "acceptanceCriteria": [
+      "AppHost.csproj and ServiceDefaults.csproj exist and are added to the .sln file.",
+      "Given the AppHost project, when 'dotnet run --project apps/AppHost' is executed, then the .NET Aspire dashboard is accessible at https://localhost:15888 (HTTPS, protected by Aspire browser token).",
+      "ServiceDefaults project exposes AddServiceDefaults() and MapDefaultEndpoints() extension methods that configure OpenTelemetry tracing, metrics, health checks, resilience, and service discovery.",
+      "AppHost Program.cs is minimal: DistributedApplication.CreateBuilder(args).Build().Run() with no services registered (no AddProject<>() calls \u2014 API is added in Sprint 2).",
+      "'dotnet build' on the full solution produces zero errors and zero warnings.",
+      "CONTRIBUTING.md exists with a Prerequisites section that includes: the dotnet dev-certs https --trust command with explanation, required tool versions, local port table, and documented test commands."
+    ],
+    "size": 2,
+    "priority": 3,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "aspire",
+      "infrastructure"
+    ],
+    "dependencies": [
+      "item-001"
+    ]
+  },
+  {
+    "id": "item-014",
+    "title": "Scaffold backend xUnit test projects and wire to solution",
+    "description": "Create dedicated xUnit test projects for the SharedKernel and the API (unit + integration). Wire them into the .sln and confirm 'dotnet test' discovers and passes a trivial placeholder test in each project. Sets up the test harness before any real feature tests are written.",
+    "acceptanceCriteria": [
+      "At least two test projects exist: SharedKernel.Tests.csproj and Api.Tests.csproj (or Api.UnitTests / Api.IntegrationTests if split).",
+      "Each test project references xUnit, FluentAssertions, and NSubstitute via PackageReference.",
+      "Each test project contains a placeholder test class with one passing [Fact] that asserts true.",
+      "'dotnet test' from the solution root discovers all test projects and exits with code 0.",
+      "Test projects reference their respective source projects (SharedKernel.Tests \u00e2\u2020\u2019 SharedKernel; Api.Tests \u00e2\u2020\u2019 Api).",
+      "No test project references production infrastructure packages (keep unit tests free of EF Core, HTTP clients, etc.)."
+    ],
+    "size": 2,
+    "priority": 4,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "testing",
+      "xunit",
+      "dx"
+    ],
+    "dependencies": [
+      "item-002",
+      "item-003"
+    ]
+  },
+  {
+    "id": "item-004",
+    "title": "Scaffold ASP.NET Core Web API wired to Aspire with OpenAPI",
+    "description": "Create the ASP.NET Core Web API project. Wire it to ServiceDefaults (health checks, telemetry). Add OpenAPI/Swagger support using the chosen tooling (built-in .NET 9 OpenAPI or Swashbuckle \u00e2\u20ac\u201d see pre-sprint decision #2). Register the API in AppHost. Confirm the API starts and serves the OpenAPI document.",
+    "acceptanceCriteria": [
+      "Api.csproj exists targeting the latest LTS .NET, references ServiceDefaults, and is registered in AppHost.",
+      "GET /openapi/v1.json (or /swagger/v1/swagger.json) returns a valid OpenAPI document with HTTP 200.",
+      "Swagger UI (or scalar UI) is accessible at a documented local URL in dev mode.",
+      "GET /health returns HTTP 200 with a healthy status (via MapDefaultEndpoints).",
+      "The project follows Vertical Slice Architecture: a /Features/ folder exists with a README noting the slice convention.",
+      "'dotnet run --project Api' starts the API independently of Aspire (for local debugging).",
+      "'dotnet build' produces zero errors and zero warnings."
+    ],
+    "size": 2,
+    "priority": 5,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "api",
+      "openapi",
+      "aspire"
+    ],
+    "dependencies": [
+      "item-002",
+      "item-003"
+    ]
+  },
+  {
+    "id": "item-005",
+    "title": "Health Check vertical slice with unit + integration tests",
+    "description": "Implement the first full vertical slice: a HealthCheck feature under /Features/HealthCheck/. The slice includes the endpoint definition, a handler/service, DTOs, and tests. This validates the VSA pattern and serves as the reference example for future slices.",
+    "acceptanceCriteria": [
+      "GET /health returns HTTP 200 with JSON body { \"status\": \"healthy\" } (content-type: application/json).",
+      "The slice is self-contained under Features/HealthCheck/ and contains: endpoint registration, handler, HealthResponse DTO, and no references to other feature folders.",
+      "A unit test verifies the handler returns a successful Result<HealthResponse> with status = 'healthy' without starting the web server.",
+      "An integration test uses WebApplicationFactory<Program> to call GET /health and asserts HTTP 200 + correct JSON body.",
+      "All tests pass via 'dotnet test' with exit code 0.",
+      "The slice serves as documented reference: a comment or README in the slice folder explains the VSA file layout."
+    ],
+    "size": 3,
+    "priority": 6,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "vsa",
+      "architecture",
+      "testing"
+    ],
+    "dependencies": [
+      "item-004",
+      "item-014"
+    ]
+  },
+  {
+    "id": "item-006",
+    "title": "Scaffold React Vite app with TypeScript, path aliases, ESLint, Prettier",
+    "description": "Create the React frontend application using Vite with the TypeScript template. Configure path aliases (@/ \u00e2\u2020\u2019 src/), ESLint (with React + TypeScript rules), and Prettier. Confirm the dev server starts and the default page renders.",
+    "acceptanceCriteria": [
+      "The React app exists at apps/web/ (or agreed location) with vite.config.ts, tsconfig.json, and tsconfig.node.json.",
+      "Path alias '@/' resolves to the src/ directory in both Vite and TypeScript (vite.config.ts + tsconfig.json paths).",
+      "ESLint config covers: react-hooks, react-refresh, @typescript-eslint/recommended; 'pnpm lint' (or 'pnpm --filter web lint') exits with code 0 on the scaffold.",
+      "Prettier config (.prettierrc or prettier.config.ts) is present; 'pnpm format --check' exits with code 0 on the scaffold.",
+      "'pnpm dev' (from apps/web/) starts the Vite dev server and the browser shows the default Vite+React page.",
+      "No TypeScript errors on initial scaffold ('pnpm tsc --noEmit' exits 0)."
+    ],
+    "size": 2,
+    "priority": 7,
+    "status": "ready",
+    "tags": [
+      "frontend",
+      "react",
+      "vite",
+      "typescript",
+      "dx"
+    ],
+    "dependencies": [
+      "item-001"
+    ]
+  },
+  {
+    "id": "item-007",
+    "title": "Configure Vitest + React Testing Library with passing example test",
+    "description": "Add Vitest and React Testing Library to the React workspace. Configure vitest.config.ts (jsdom environment, setup file, coverage). Write an example test for a trivial component to validate the setup end-to-end.",
+    "acceptanceCriteria": [
+      "vitest.config.ts exists in apps/web/ with environment: 'jsdom', setupFiles pointing to a test setup file that imports @testing-library/jest-dom.",
+      "An example component (e.g. Greeting.tsx) and its test (Greeting.test.tsx) exist under src/; the test renders the component and asserts visible text.",
+      "'pnpm test' (or 'pnpm --filter web test') runs Vitest in CI mode and exits with code 0.",
+      "Coverage is configured (istanbul or v8); 'pnpm test:coverage' generates a coverage report without errors.",
+      "The test does not rely on any network calls or backend services.",
+      "Test output shows at least 1 test suite, 1 test passed."
+    ],
+    "size": 2,
+    "priority": 8,
+    "status": "ready",
+    "tags": [
+      "frontend",
+      "testing",
+      "vitest",
+      "rtl",
+      "tdd"
+    ],
+    "dependencies": [
+      "item-006"
+    ]
+  },
+  {
+    "id": "item-008",
+    "title": "Set up Storybook with baseline Button component + story",
+    "description": "Initialise Storybook 7 or 8 in the React workspace. Create a baseline Button component with variants (primary, secondary, disabled) and a corresponding *.stories.tsx file. Confirm Storybook builds and serves all stories.",
+    "acceptanceCriteria": [
+      "Storybook is initialised in apps/web/ with a .storybook/ directory containing main.ts and preview.ts.",
+      "A Button component exists at src/components/Button/Button.tsx with at least: primary variant, secondary variant, disabled state, and an onClick prop.",
+      "Button.stories.tsx exists alongside the component with at least three named stories: Primary, Secondary, Disabled.",
+      "'pnpm storybook' (from apps/web/ or root) launches Storybook dev server on a documented port without errors.",
+      "'pnpm build-storybook' exits with code 0 and produces a static build in storybook-static/.",
+      "Each story renders without console errors in the Storybook canvas."
+    ],
+    "size": 2,
+    "priority": 9,
+    "status": "ready",
+    "tags": [
+      "frontend",
+      "storybook",
+      "ux",
+      "component"
+    ],
+    "dependencies": [
+      "item-006"
+    ]
+  },
+  {
+    "id": "item-009",
+    "title": "Configure Playwright e2e suite with one smoke test",
+    "description": "Add Playwright to the project (co-located in apps/web/e2e/ or a standalone e2e/ workspace \u00e2\u20ac\u201d see pre-sprint decision #3). Configure playwright.config.ts. Write one smoke test that navigates to the app, asserts the page title is visible, and confirms the app loads.",
+    "acceptanceCriteria": [
+      "playwright.config.ts exists with baseURL pointing to the Vite dev server (e.g. http://localhost:5173), one configured browser (chromium), and CI-friendly settings (no interactive prompts).",
+      "A smoke test file (e.g. app.spec.ts) navigates to '/' and asserts: the page title element (h1 or <title>) is visible and contains expected text.",
+      "'pnpm test:e2e' runs Playwright in headless mode and exits with code 0 when the dev server is running.",
+      "Playwright HTML report is written to a documented output directory (e.g. playwright-report/).",
+      "The test does not depend on any backend API call (pure frontend smoke test).",
+      "README or inline comment documents how to start the dev server before running e2e tests."
+    ],
+    "size": 2,
+    "priority": 10,
+    "status": "ready",
+    "tags": [
+      "frontend",
+      "testing",
+      "e2e",
+      "playwright"
+    ],
+    "dependencies": [
+      "item-006"
+    ]
+  },
+  {
+    "id": "item-015",
+    "title": "Configure CORS policy for React dev server \u00e2\u2020\u201d ASP.NET API",
+    "description": "Add a named CORS policy to the ASP.NET Core API that permits requests from the React Vite dev server origin (e.g. http://localhost:5173). The policy should be environment-aware: permissive in Development, locked down in Production. Document the allowed origins in .env.example.",
+    "acceptanceCriteria": [
+      "A named CORS policy (e.g. 'LocalDev') is registered in Program.cs and applied to all API endpoints (or via middleware).",
+      "The allowed origin is read from configuration (e.g. Cors:AllowedOrigins) so it is not hardcoded.",
+      "In the Development environment, GET /health called from http://localhost:5173 returns the CORS headers Access-Control-Allow-Origin without a browser CORS error.",
+      "In the Production environment (or when the config key is absent), no wildcard origin is permitted.",
+      "An integration test (or documented manual test step) validates the CORS header is present on a preflight OPTIONS request.",
+      ".env.example includes the CORS_ALLOWED_ORIGINS (or equivalent) variable with a documented default."
+    ],
+    "size": 1,
+    "priority": 11,
+    "status": "ready",
+    "tags": [
+      "backend",
+      "dotnet",
+      "cors",
+      "dx",
+      "frontend"
+    ],
+    "dependencies": [
+      "item-004",
+      "item-006"
+    ]
+  },
+  {
+    "id": "item-010",
+    "title": "Wire root orchestration scripts for single-command start + test",
+    "description": "Implement the root package.json scripts so that a single command from the repo root starts the full stack, runs all tests, and launches Storybook. Use 'concurrently' or similar to compose the Aspire and Vite processes. All scripts must be CI-safe (no interactive prompts, correct exit codes).",
+    "acceptanceCriteria": [
+      "'pnpm start' (from repo root) concurrently starts .NET Aspire AppHost and the React Vite dev server; both are reachable within 30 seconds on their documented ports.",
+      "'pnpm test' runs Vitest in CI mode across all frontend workspaces and exits with code 0 when all tests pass, non-zero on failure.",
+      "'pnpm test:e2e' runs Playwright headless and exits with correct code (0 pass / non-zero fail).",
+      "'pnpm test:api' runs 'dotnet test' on the full solution and exits with the dotnet test exit code.",
+      "'pnpm storybook' starts the Storybook dev server on its documented port.",
+      "'pnpm build' builds all frontend workspaces and the .NET solution; exits non-zero if any build fails.",
+      "All scripts are documented with a one-line comment in package.json or a companion SCRIPTS.md."
+    ],
+    "size": 2,
+    "priority": 12,
+    "status": "ready",
+    "tags": [
+      "dx",
+      "scripts",
+      "monorepo",
+      "testing",
+      "devops"
+    ],
+    "dependencies": [
+      "item-003",
+      "item-004",
+      "item-006",
+      "item-007",
+      "item-008",
+      "item-009",
+      "item-015"
+    ]
+  },
+  {
+    "id": "item-011",
+    "title": "Add .env.example with all environment variables documented",
+    "description": "Create a root .env.example file (and optionally per-workspace .env.example files) listing every environment variable used by the API and the frontend, with a description and safe default or placeholder value. No real secrets.",
+    "acceptanceCriteria": [
+      ".env.example exists at the repo root listing all known variables: API base URL, CORS allowed origins, Aspire dashboard port, any feature flags.",
+      "Each variable entry includes an inline comment explaining its purpose and accepted values.",
+      "apps/web/.env.example (or .env.local.example) lists VITE_* frontend variables separately.",
+      "No real credentials, tokens, or secrets appear in .env.example.",
+      "README references .env.example in its Getting Started steps (copy to .env and customise).",
+      "'pnpm start' and the API start without error when the .env values match the documented defaults."
+    ],
+    "size": 1,
+    "priority": 13,
+    "status": "ready",
+    "tags": [
+      "dx",
+      "config",
+      "environment"
+    ],
+    "dependencies": [
+      "item-004",
+      "item-006"
+    ]
+  },
+  {
+    "id": "item-012",
+    "title": "Add Docker Compose alternative local start",
+    "description": "Provide a docker-compose.yml at the repo root as an alternative to .NET Aspire for developers who cannot or prefer not to install the Aspire workload. The compose file should start the API and (optionally) the frontend in production-like mode. Clearly mark this as optional infrastructure.",
+    "acceptanceCriteria": [
+      "docker-compose.yml exists at the repo root with services for at minimum: the ASP.NET API (built from a Dockerfile or pre-built image reference).",
+      "Dockerfile (or Dockerfile.api) exists and produces a working API image; 'docker build' exits with code 0.",
+      "'docker compose up' starts the API and it responds to GET /health with HTTP 200.",
+      "Environment variables are injected via .env or docker-compose.override.yml \u00e2\u20ac\u201d no hardcoded secrets in docker-compose.yml.",
+      "README documents the Docker Compose path as an alternative to 'pnpm start' with Aspire.",
+      "The compose setup is clearly marked optional in the README (e.g. '## Alternative: Docker Compose (no Aspire required)')."
+    ],
+    "size": 2,
+    "priority": 14,
+    "status": "ready",
+    "tags": [
+      "devops",
+      "docker",
+      "infrastructure",
+      "optional"
+    ],
+    "dependencies": [
+      "item-004",
+      "item-011"
+    ]
+  },
+  {
+    "id": "item-016",
+    "title": "GitHub Actions CI pipeline (test + build on PR)",
+    "description": "Create a GitHub Actions workflow that runs on every pull request and push to main. The pipeline must: restore dependencies, build the .NET solution, run dotnet test, install pnpm deps, run Vitest, and run Playwright. All steps must be non-interactive and exit with correct codes.",
+    "acceptanceCriteria": [
+      ".github/workflows/ci.yml exists with triggers: push to main, pull_request to main.",
+      "The workflow has two jobs (or a single job with steps): 'backend' (dotnet restore, build, test) and 'frontend' (pnpm install, build, test).",
+      "The backend job runs on ubuntu-latest, sets up the correct .NET SDK version, and exits non-zero on test failure.",
+      "The frontend job runs on ubuntu-latest, sets up Node.js + pnpm, runs Vitest in CI mode, and uploads Playwright HTML report as an artifact on failure.",
+      "Playwright browsers are installed via 'pnpm exec playwright install --with-deps chromium' before the e2e step.",
+      "No secrets or environment variables are hardcoded in the workflow file; any required values use GitHub Actions secrets or sensible CI defaults.",
+      "A green pipeline badge URL is documented in the README."
+    ],
+    "size": 2,
+    "priority": 15,
+    "status": "ready",
+    "tags": [
+      "ci",
+      "devops",
+      "github-actions",
+      "testing"
+    ],
+    "dependencies": [
+      "item-010"
+    ]
+  },
+  {
+    "id": "item-013",
+    "title": "Write README with Getting Started + dev commands",
+    "description": "Write the top-level README.md. Cover: project overview, prerequisites, first-time setup (including 'dotnet dev-certs https --trust'), all developer commands, environment variable setup, and the two local-start paths (Aspire and Docker Compose). Match the documentation style of the project.",
+    "acceptanceCriteria": [
+      "README.md exists at the repo root with sections: Overview, Prerequisites, Getting Started, Developer Commands, Environment Variables, Running Tests, Storybook, CI, and (optional) Docker Compose.",
+      "Prerequisites section lists exact tool versions or version ranges: Node.js, pnpm, .NET SDK, Docker (optional).",
+      "Getting Started includes the one-time step 'dotnet dev-certs https --trust' with an explanation of why.",
+      "All root scripts (pnpm start, pnpm test, pnpm test:e2e, pnpm test:api, pnpm storybook, pnpm build) are listed with a one-sentence description.",
+      "Environment Variables section references .env.example and documents the copy step ('cp .env.example .env').",
+      "Docker Compose section explains the alternative start path and its trade-offs vs Aspire.",
+      "README renders correctly on GitHub (no broken links to local paths, correct markdown headings)."
+    ],
+    "size": 1,
+    "priority": 16,
+    "status": "ready",
+    "tags": [
+      "documentation",
+      "dx",
+      "readme"
+    ],
+    "dependencies": [
+      "item-010",
+      "item-011",
+      "item-012"
+    ]
+  }
+]

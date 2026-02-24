@@ -1,0 +1,21 @@
+{
+  "name": "adventure-engine",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "start": "dotnet run --project apps/AppHost",
+    "test": "echo 'Frontend tests: add in Sprint 2'",
+    "test:e2e": "echo 'E2E tests: add in Sprint 3'",
+    "test:api": "dotnet test AdventureEngine.slnx --no-build -c Release --logger trx --results-directory ./TestResults",
+    "storybook": "echo 'Storybook: add in Sprint 3'",
+    "build": "echo 'Frontend build: add in Sprint 2'"
+  },
+  "devDependencies": {
+    "yaml": "2.8.0"
+  }
+}

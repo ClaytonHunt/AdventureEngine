@@ -1,0 +1,97 @@
+{
+  "id": "b0e88bd7204d6c8b",
+  "workflowName": "Sprint Planning",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\sprint-planning.json",
+  "workflowDef": {
+    "name": "Sprint Planning",
+    "description": "Select the highest-priority backlog items that fit within one sprint's capacity, validate dependencies, and produce a ready-to-execute sprint plan",
+    "initial": "backlog-review",
+    "states": {
+      "backlog-review": {
+        "description": "Review backlog health before planning — flag items missing acceptance criteria, xl items that need splitting, and stale items that need re-evaluation",
+        "agent": "backlog-manager",
+        "next": [
+          "sprint-selection"
+        ],
+        "requires_approval": false
+      },
+      "sprint-selection": {
+        "description": "Select highest-priority items up to effective sprint capacity, resolve dependencies, update item statuses to in-sprint, and write the sprint plan to sprint-plan.md",
+        "agent": "sprint-planner",
+        "next": [
+          "done",
+          "backlog-review"
+        ],
+        "requires_approval": true
+      },
+      "done": {
+        "description": "Sprint plan finalized — summarize the sprint goal, selected items, and first recommended workflow to run",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1771888435016,
+  "lastUpdated": 1771889263401,
+  "currentState": "done",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "backlog-review",
+      "agentName": "backlog-manager",
+      "startedAt": 1771888435016,
+      "completedAt": 1771888650771,
+      "summary": "Starting the review cycle — backlog exists with 16 items and 5 open pre-sprint decisions that need resolution before sprint planning can proceed.",
+      "tokensUsed": 863,
+      "elapsed": 0,
+      "taskGiven": "\n## Backlog Review — Full Health Check + Resolve All Open Decisions\n\nYou are the **Backlog Manager** running a pre-sprint review. You have two jobs in this pass:\n\n### JOB 1 — Read and Health-Check the Backlog\nRead `backlog.json`. Verify every item against these criteria:\n- `status` is `\"pending\"` for all un-started items\n- `dependencies` arrays are internally consistent (no missing refs, no circular deps)\n- Every item has ≥ 3 acceptance criteria\n- No item exceeds 8 story points\n- Tags are present on every item\n- Priority order is correct (foundations before features)\n\nReport any issues found. Fix them directly in `backlog.json`.\n\n---\n\n### JOB 2 — Resolve the 5 Open Pre-Sprint Decisions\n\nThere are **5 outstanding architectural/tooling questions** that must be resolved and locked into the backlog before sprint planning. Below is each question with the context needed to make a good decision. Make the call, record the rationale, and update `backlog.json` so that the relevant items' `description` and `acceptanceCriteria` fields reflect the chosen option.\n\n---\n\n#### Decision 1 — Folder Convention: `apps/` vs `src/`\n**Context:** The monorepo needs a top-level folder to hold the React app (`web`) and eventually the .NET projects.\n- `apps/web/` — conventional for monorepos (Turborepo, Nx style); makes it obvious the folder contains runnable applications; aligns with pnpm workspaces (`packages` = shared libs, `apps` = runnable apps)\n- `src/web/` — simpler, but unusual in a monorepo; can confuse tooling that scans for workspace packages\n\n**Affects:** item-001 (monorepo scaffold), item-006 (React Vite), item-009 (Playwright)\n**Recommended default:** `apps/web/` (monorepo-conventional)\n→ **Lock this decision into the `description` and `acceptanceCriteria` of item-001, item-006, item-009**\n\n---\n\n#### Decision 2 — OpenAPI Tooling: Built-in .NET 9 OpenAPI vs Swashbuckle\n**Context:** ASP.NET Core apps need OpenAPI/Swagger docs.\n- **Built-in .NET 9 OpenAPI** (`Microsoft.AspNetCore.OpenApi` + Scalar UI) — zero extra packages, first-class support in .NET 9, Scalar provides a modern UI replacing Swagger UI. The `AddOpenApi()` / `MapOpenApi()` pattern is idiomatic for .NET 9+.\n- **Swashbuckle** (`Swashbuckle.AspNetCore`) — mature, widely documented, works on .NET 6–9, but is no longer the recommended approach for new .NET 9 projects; Microsoft's own templates no longer include it.\n\n**Affects:** item-004 (ASP.NET Web API scaffold)\n**Recommended default:** Built-in .NET 9 OpenAPI + Scalar UI\n→ **Lock into item-004's `description` and `acceptanceCriteria`**\n\n---\n\n#### Decision 3 — Playwright Placement: `apps/web/e2e/` vs standalone `e2e/` workspace package\n**Context:** Playwright tests need a home in the monorepo.\n- `apps/web/e2e/` — co-located with the React app; one `playwright.config.ts` scoped to the web app; simplest setup; natural for a single frontend\n- `e2e/` (standalone workspace package) — better when there are multiple apps to test across; adds complexity now but scales better; requires its own `package.json` and workspace entry\n\n**Affects:** item-009 (Playwright), item-016 (GitHub Actions CI)\n**Recommended default:** `apps/web/e2e/` (co-located, simpler for now; can be extracted later)\n→ **Lock into item-009's `description` and `acceptanceCriteria`**\n\n---\n\n#### Decision 4 — Docker Compose Scope: Include in this release or defer?\n**Context:** item-012 adds a `docker-compose.yml` as an alternative local start for developers who don't have or want the .NET Aspire workload installed.\n- **Include** — improves onboarding for contributors without the Aspire workload; good for open-source projects; adds ~2pt of work\n- **Defer** — keeps scope tight; Aspire is the primary path; Docker Compose can be added post-MVP\n\n**Affects:** item-012 (Docker Compose), item-013 (README — Docker Compose section)\n**Recommended default:** **Include** — this is a greenfield repo that will likely be shared; the onboarding friction of requiring Aspire is real\n→ **Keep item-012 as `status: \"pending\"` (not deferred). Lock decision into item-012's description.**\n\n---\n\n#### Decision 5 — Dev Certificate Onboarding: Where to document `dotnet dev-certs https --trust`\n**Context:** .NET Aspire uses HTTPS by default. Developers must run `dotnet dev-certs https --trust` once on their machine before starting the app, or the browser will reject the Aspire dashboard and API calls.\n- **Option A:** Document only in item-013 (README) as a \"Prerequisites\" step\n- **Option B:** Add an explicit acceptance criterion to item-003 (Aspire setup) that the dev cert command is tested/documented as part of the Aspire setup item\n\n**Recommended default:** **Option B** — add it as an AC to item-003 (Aspire setup) AND document it in item-013 (README). This way the developer doing item-003 is reminded to verify the cert workflow, and the README author (item-013) picks it up automatically.\n→ **Add an AC to item-003 and note in item-013's description**\n\n---\n\n### Output Required\n\n1. Write the updated `backlog.json` with all decisions locked in\n2. Produce a short **Decision Log** (can be inline in your response) confirming each decision and which items were updated\n3. Flag any remaining concerns or risks for the sprint planner to be aware of\n\n---\n\n### Background Context (for reference)\n\n**Tech stack:** React + Vite (TypeScript) | ASP.NET Core (.NET 9) | .NET Aspire | xUnit + FluentAssertions + NSubstitute | Vitest + RTL | Playwright | Storybook | pnpm workspaces\n\n**Architecture:** Vertical Slice Architecture (no MediatR) wrapping Clean Architecture + DDD. SharedKernel holds base types. Each feature lives in `/Features/<Name>/` containing endpoint, service, DTOs, domain model, validator, and tests.\n\n**Sprint capacity:** 6 effective story points per sprint (8 raw × 0.75 focus factor)\n\n**Current backlog totals:** 16 items | ~31 story points | all `status: \"pending\"`\n",
+      "outputPreview": "Starting the review cycle — backlog exists with 16 items and 5 open pre-sprint decisions that need resolution before sprint planning can proceed."
+    },
+    {
+      "state": "sprint-selection",
+      "agentName": "sprint-planner",
+      "startedAt": 1771888650771,
+      "completedAt": 1771889144057,
+      "summary": "Sprint 1 selected (6pt): item-001 monorepo scaffold + item-002 SharedKernel + item-003 Aspire AppHost. All 5 pre-sprint decisions resolved and locked into backlog.json. sprint-plan.md written. Backlog health verified clean across all 16 items.",
+      "tokensUsed": 765,
+      "elapsed": 457487,
+      "taskGiven": "\n## Sprint Planning Complete — Write Final Deliverable Summary\n\nThe sprint planning session is complete. Please write a polished `SPRINT_1_PLAN.md` file in the repo root that serves as the team's single source of truth for Sprint 1. This file will be pinned to the team board.\n\n---\n\n### Context: What Was Accomplished This Session\n\n**Backlog Review findings:**\n- 16-item backlog passed full health check (all items: correct status, ≥3 ACs, tags, dependency refs, no XL items)\n- `_decisions_locked` registry added to `backlog.json` confirming all architectural decisions\n\n**5 Architectural Decisions Resolved:**\n\n| # | Decision | Resolution |\n|---|---|---|\n| 1 | Folder convention | `apps/` — monorepo-conventional (pnpm workspaces: `apps/` for runnable apps) |\n| 2 | OpenAPI tooling | Built-in .NET 9 OpenAPI + Scalar UI — `AddOpenApi()` / `MapOpenApi()` / `MapScalarApiReference()` |\n| 3 | Playwright placement | `apps/web/e2e/` — co-located with the React app (can be extracted to a standalone package later) |\n| 4 | Docker Compose scope | **Included** — keeps onboarding open to contributors without the Aspire workload |\n| 5 | Dev cert onboarding | Document `dotnet dev-certs https --trust` in item-003 AC **and** README prerequisites |\n\n**Sprint 1 Selection (Effective capacity: 6pt):**\n\n| Item | Title | Points | Status |\n|---|---|---|---|\n| item-001 | Scaffold monorepo folder structure + root `package.json` | 2 | in-sprint |\n| item-002 | Create SharedKernel C# class library with DDD building blocks | 2 | in-sprint |\n| item-003 | Set up .NET Aspire AppHost and ServiceDefaults | 2 | in-sprint |\n| **Total** | | **6pt** | |\n\n**Remaining backlog:** 13 items, ~25 story points, all `status: \"pending\"` and unblocked after Sprint 1 closes.\n\n**Sprint 2 preview (fully unblocked, 6pt):**\n- item-014 — Backend xUnit test projects (2pt)\n- item-004 — ASP.NET Core Web API wired to Aspire + OpenAPI (2pt)\n- item-006 — React Vite app with TypeScript + ESLint + Prettier (2pt)\n\n---\n\n### What to Write in `SPRINT_1_PLAN.md`\n\nInclude all of the following sections:\n\n1. **Sprint 1 Header** — Goal statement, dates (use Day 1–10 relative format), capacity, team size\n2. **Sprint Goal** — One clear sentence describing the value delivered by the end of Sprint 1\n3. **Decision Log** — All 5 decisions from above, formatted as a clean table with the rationale column\n4. **Selected Items** — Each of the 3 in-sprint items with: title, description, acceptance criteria checklist, and dependencies\n5. **Execution Order & Parallelism** — Exact sequence (item-001 must merge first; item-002 and item-003 can parallelise)\n6. **Definition of Done** — Sprint-level DoD checklist\n7. **Prerequisites / Machine Setup** — Commands every developer must have run before Sprint 1 Day 1\n8. **Full Backlog Roadmap** — All 16 items shown in a table with status (in-sprint / pending), story points, and sprint assignment (S1, S2, S3… as projected)\n9. **Sprint 2 Preview** — Brief summary of what's next (item-014 + item-004 + item-006)\n10. **Risks and Mitigations** — Top 3 risks for this sprint\n\n**Also update** `GROOMING_SUMMARY.md` (if it exists in the repo root) with a footer section: `## Sprint 1 Status` that says the sprint has been planned, with a link/reference to `SPRINT_1_PLAN.md`.\n\nSave both files. Confirm file paths in your output.\n\n**Tech stack reminder (for accurate content):**\nReact + Vite (TypeScript) | ASP.NET Core .NET 9 | .NET Aspire | pnpm workspaces | xUnit + FluentAssertions + NSubstitute | Vitest + React Testing Library | Playwright | Storybook 8 | Vertical Slice Architecture (no MediatR) | Clean Architecture + DDD | SharedKernel pattern\n",
+      "outputPreview": "Sprint 1 selected (6pt): item-001 monorepo scaffold + item-002 SharedKernel + item-003 Aspire AppHost. All 5 pre-sprint decisions resolved and locked into backlog.json. sprint-plan.md written. Backlog health verified clean across all 16 items."
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      "backlog.json",
+      ".pi/chronicle/sprint-plan.md"
+    ],
+    "keyFindings": [
+      "All 5 pre-sprint decisions resolved and locked into backlog.json with _decisions_locked registry",
+      "Decision 1 — Folder convention: apps/ (already in use, confirmed explicit)",
+      "Decision 2 — OpenAPI tooling: Built-in .NET 9 OpenAPI + Scalar UI (Swashbuckle removed, AddOpenApi()/MapScalarApiReference() locked into item-004)",
+      "Decision 3 — Playwright placement: apps/web/e2e/ co-located (item-009 and item-013 updated to remove standalone e2e/ language)",
+      "Decision 4 — Docker Compose: INCLUDED in this release (item-012 stays pending, rationale locked into description)",
+      "Decision 5 — Dev cert onboarding: Option B (AC in item-003 + README note in item-013 — was already implemented, confirmed explicit)",
+      "Sprint 1 selected: item-001 (2pt) + item-002 (2pt) + item-003 (2pt) = 6pt exactly at effective capacity (8 × 0.8)",
+      "item-001, item-002, item-003 status updated to in-sprint in backlog.json",
+      "sprint-plan.md written to .pi/chronicle/ with full execution contract",
+      "item-001 is a hard gate — must merge before item-002/003 can start",
+      "item-002 and item-003 can be parallelised by two developers after item-001 merges",
+      "Sprint 2 is already fully unblocked: item-014 (2pt) + item-004 (2pt) + item-006 (2pt) = 6pt exactly",
+      "Backlog health: all 16 items pass all criteria — correct statuses, AC counts, tags, dependency refs, no XL items"
+    ],
+    "pendingTasks": [
+      "Execute Sprint 1: item-001 (monorepo scaffold) first, then item-002 + item-003 in parallel",
+      "Plan Sprint 2 after Sprint 1 closes: item-014 + item-004 + item-006 are all unblocked and total 6pt",
+      "Aspire workload prereq: developer taking item-003 must run: dotnet workload install aspire && dotnet dev-certs https --trust"
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "backlog-review->sprint-selection": 1,
+    "sprint-selection->done": 1
+  },
+  "totalTokens": 1628,
+  "totalElapsed": 576830,
+  "status": "done"
+}

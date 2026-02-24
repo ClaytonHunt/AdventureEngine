@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Aspire.AppHost.Sdk is the .NET 10 NuGet-based replacement for the deprecated Aspire workload.
+    The Sdk Version here is specified inline (not via CPM — Sdk declarations are outside CPM scope).
+    See: https://aka.ms/aspire/update-to-sdk
+  -->
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.1.1" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AdventureEngine.AppHost</RootNamespace>
+    <AssemblyName>AdventureEngine.AppHost</AssemblyName>
+    <!-- Suppress Aspire SDK analyzer warnings to prevent TreatWarningsAsErrors breakage -->
+    <NoWarn>$(NoWarn);ASPIRE001;AZPROVISION001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+  </ItemGroup>
+</Project>

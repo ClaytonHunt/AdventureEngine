@@ -1,0 +1,31 @@
+{
+  "name": "Refactoring",
+  "description": "Safe, test-guided refactoring: assess, plan, refactor, verify",
+  "initial": "assessment",
+  "states": {
+    "assessment": {
+      "description": "Assess code to refactor and define the target design",
+      "agent": "planner",
+      "next": ["refactoring"],
+      "requires_approval": true
+    },
+    "refactoring": {
+      "description": "Execute the refactoring incrementally with tests passing",
+      "agent": "builder",
+      "next": ["verification", "assessment"],
+      "requires_approval": false
+    },
+    "verification": {
+      "description": "Verify correctness, tests, and no regressions",
+      "agent": "reviewer",
+      "next": ["done", "refactoring"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Refactoring complete — write changelog entry",
+      "agent": "documenter",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

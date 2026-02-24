@@ -1,0 +1,25 @@
+{
+  "name": "Sprint Planning",
+  "description": "Select the highest-priority backlog items that fit within one sprint's capacity, validate dependencies, and produce a ready-to-execute sprint plan",
+  "initial": "backlog-review",
+  "states": {
+    "backlog-review": {
+      "description": "Review backlog health before planning — flag items missing acceptance criteria, xl items that need splitting, and stale items that need re-evaluation",
+      "agent": "backlog-manager",
+      "next": ["sprint-selection"],
+      "requires_approval": false
+    },
+    "sprint-selection": {
+      "description": "Select highest-priority items up to effective sprint capacity, resolve dependencies, update item statuses to in-sprint, and write the sprint plan to sprint-plan.md",
+      "agent": "sprint-planner",
+      "next": ["done", "backlog-review"],
+      "requires_approval": true
+    },
+    "done": {
+      "description": "Sprint plan finalized — summarize the sprint goal, selected items, and first recommended workflow to run",
+      "agent": "documenter",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

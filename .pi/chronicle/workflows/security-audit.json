@@ -1,0 +1,32 @@
+{
+  "name": "Security Audit",
+  "description": "Full security review: recon, threat model, vulnerability scan, remediation plan",
+  "initial": "reconnaissance",
+  "states": {
+    "reconnaissance": {
+      "description": "Map attack surface — auth flows, data inputs, external integrations",
+      "agent": "scout",
+      "next": ["audit"],
+      "requires_approval": false
+    },
+    "audit": {
+      "description": "Deep security review against OWASP Top 10 and threat model",
+      "agent": "security-auditor",
+      "next": ["remediation-plan", "reconnaissance"],
+      "requires_approval": false
+    },
+    "remediation-plan": {
+      "description": "Prioritized remediation plan with specific code fixes",
+      "agent": "planner",
+      "extra_skills": ["owasp-top10"],
+      "next": ["done"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Security audit report complete",
+      "agent": "tech-writer",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

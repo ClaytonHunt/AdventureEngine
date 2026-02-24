@@ -1,0 +1,397 @@
+{
+  "_version": 1,
+  "_description": "Chronicle product backlog. Managed by backlog-manager and sprint-planner agents. Path: .pi/chronicle/backlog.json",
+  "_decisions_locked": [
+    {
+      "id": "decision-001",
+      "question": "Folder convention: apps/ vs src/",
+      "resolution": "apps/ — monorepo-conventional (Turborepo/Nx/pnpm style). apps/ holds runnable projects, packages/ holds shared libraries.",
+      "affects": ["item-001", "item-006", "item-009"],
+      "locked_at": "2026-02-23T18:17:31-05:00"
+    },
+    {
+      "id": "decision-002",
+      "question": "OpenAPI tooling: Built-in .NET 9 OpenAPI (Microsoft.AspNetCore.OpenApi + Scalar UI) vs Swashbuckle",
+      "resolution": "Built-in .NET 9 OpenAPI with Scalar UI. AddOpenApi() / MapOpenApi() pattern. No Swashbuckle packages.",
+      "affects": ["item-004"],
+      "locked_at": "2026-02-23T18:17:31-05:00"
+    },
+    {
+      "id": "decision-003",
+      "question": "Playwright placement: apps/web/e2e/ (co-located) vs standalone e2e/ workspace package",
+      "resolution": "apps/web/e2e/ — co-located with the React app. Single playwright.config.ts scoped to the web app. Can be extracted to a standalone package later if multiple frontends are added.",
+      "affects": ["item-009", "item-016"],
+      "locked_at": "2026-02-23T18:17:31-05:00"
+    },
+    {
+      "id": "decision-004",
+      "question": "Docker Compose scope: Include in this release or defer?",
+      "resolution": "Include — improves onboarding for contributors without the Aspire workload. item-012 remains pending.",
+      "affects": ["item-012", "item-013"],
+      "locked_at": "2026-02-23T18:17:31-05:00"
+    },
+    {
+      "id": "decision-005",
+      "question": "Dev certificate onboarding: Where to document dotnet dev-certs https --trust",
+      "resolution": "Option B — AC added to item-003 (Aspire setup) AND documented in item-013 (README Prerequisites). Both items already reflect this.",
+      "affects": ["item-003", "item-013"],
+      "locked_at": "2026-02-23T18:17:31-05:00"
+    }
+  ],
+  "items": [
+    {
+      "id": "item-001",
+      "title": "Scaffold monorepo folder structure and root package.json",
+      "description": "As a developer, I need the top-level repo skeleton in place — folder layout, root package.json with pnpm workspaces, .gitignore, and .nvmrc — so that every subsequent task has a stable home and all tooling commands work from the repo root. This is the foundational walking-skeleton prerequisite; nothing else can be correctly placed until this exists.\n\n**Folder convention (Decision-001 LOCKED):** Use `apps/` for runnable projects and `packages/` for shared libraries — this is the monorepo-conventional layout (Turborepo/Nx/pnpm workspaces style). The top-level structure is: `apps/web/` (React Vite), `apps/Api/` (ASP.NET Core), `apps/AppHost/` (.NET Aspire), `packages/SharedKernel/` (C# DDD primitives), `packages/ServiceDefaults/` (Aspire telemetry defaults).",
+      "type": "chore",
+      "priority": 1,
+      "size": "medium",
+      "points": 2,
+      "status": "in-sprint",
+      "acceptance_criteria": [
+        "Given the repo is cloned, when a developer runs `ls` at the root, then they see at minimum: `apps/`, `packages/`, `.gitignore`, `package.json`, and `README.md` stubs — with `apps/` holding runnable projects (web, Api, AppHost) and `packages/` holding shared libraries (SharedKernel, ServiceDefaults).",
+        "Given the root `package.json`, when inspected, then it declares `\"packageManager\": \"pnpm@<version>\"`, a `workspaces` field listing `[\"apps/*\", \"packages/*\"]`, and placeholder scripts for `start`, `test`, `test:e2e`, `test:api`, `storybook`, and `build`.",
+        "Given a developer runs `pnpm install` at the root, then pnpm resolves without errors and a `pnpm-lock.yaml` is generated.",
+        "Given `.gitignore`, when inspected, then it excludes `node_modules/`, `dist/`, `build/`, `.env`, `.env.local`, `*.user`, and `bin/obj/` (for .NET artifacts).",
+        "Given `.nvmrc` or `.tool-versions`, when inspected, then it pins the Node.js version used by the project."
+      ],
+      "dependencies": [],
+      "tags": ["monorepo", "scaffold", "chore", "dx"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-001 LOCKED: `apps/` for runnable projects (web, Api, AppHost) and `packages/` for shared libraries (SharedKernel, ServiceDefaults). This decision gates item-002 through item-007. Also add `bin/` and `obj/` to .gitignore for .NET build outputs."
+    },
+    {
+      "id": "item-002",
+      "title": "Create SharedKernel C# class library with base DDD building blocks",
+      "description": "As a backend developer, I need a `packages/SharedKernel` C# class library that provides the reusable DDD primitives (Entity, ValueObject, AggregateRoot, DomainEvent, IRepository<T>, Result<T>, Error) so that every vertical slice can build on a consistent, tested foundation without duplicating boilerplate. This is the first .NET artifact and must exist before any API or slice work begins.",
+      "type": "feature",
+      "priority": 2,
+      "size": "medium",
+      "points": 2,
+      "status": "in-sprint",
+      "acceptance_criteria": [
+        "Given the SharedKernel project, when built with `dotnet build`, then it compiles with zero errors and zero warnings.",
+        "Given the `Entity` base class, when a concrete entity inherits it, then it exposes an `Id` property and overrides `Equals`/`GetHashCode` based on identity (not reference).",
+        "Given the `ValueObject` base class, when two instances with identical properties are compared with `==`, then they are considered equal.",
+        "Given `Result<T>`, when a method returns `Result<T>.Success(value)` or `Result<T>.Failure(error)`, then callers can interrogate `IsSuccess`, `Value`, and `Error` without throwing exceptions.",
+        "Given the SharedKernel project, when inspected, then it contains no external NuGet dependencies beyond the .NET BCL — `IRepository<T>` is an interface only with no EF Core or infrastructure coupling."
+      ],
+      "dependencies": ["item-001"],
+      "tags": ["backend", "dotnet", "ddd", "shared-kernel", "architecture"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "xUnit tests for SharedKernel primitives are created in item-014 (backend test projects). Keep this project free of external NuGet packages beyond the .NET BCL."
+    },
+    {
+      "id": "item-003",
+      "title": "Set up .NET Aspire AppHost and ServiceDefaults projects",
+      "description": "As a developer, I need the .NET Aspire AppHost (`apps/AppHost`) and ServiceDefaults (`packages/ServiceDefaults`) projects scaffolded and wired together so that the Aspire orchestration layer is ready to register services, expose the dashboard, and propagate OpenTelemetry defaults. This gates the API project wiring and the single-command start experience.\n\n**Decision-005 LOCKED:** The `dotnet dev-certs https --trust` prerequisite is verified as part of this item (see AC6) and must also be documented in item-013 (README Prerequisites).",
+      "type": "chore",
+      "priority": 3,
+      "size": "medium",
+      "points": 2,
+      "status": "in-sprint",
+      "acceptance_criteria": [
+        "Given `dotnet run --project apps/AppHost`, when executed, then the Aspire dashboard starts and is reachable at its default port without errors.",
+        "Given the ServiceDefaults project, when referenced by any .NET service project and `AddServiceDefaults()` is called, then OpenTelemetry tracing, metrics, and health check endpoints are configured automatically.",
+        "Given the AppHost `Program.cs`, when inspected, then it contains at minimum a stub `builder.AddProject<Projects.Api>()` registration (even if the API project is a placeholder at this stage).",
+        "Given `dotnet build` run at the solution root, then all projects (AppHost, ServiceDefaults, SharedKernel) compile successfully together.",
+        "Given the Aspire dashboard is running, when a developer navigates to it in a browser, then they can see the registered service(s) and their health status.",
+        "Given the developer setup instructions (item-013), when followed, then they include the prerequisite command `dotnet workload install aspire` and the note that a trusted HTTPS dev certificate (`dotnet dev-certs https --trust`) is required before the Aspire dashboard will load without browser security errors — and the developer implementing this item must verify this command works on their machine as part of marking this item done."
+      ],
+      "dependencies": ["item-001"],
+      "tags": ["backend", "dotnet", "aspire", "infrastructure", "dx"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-005 LOCKED: dev certificate requirement documented here (AC6) AND will be picked up by item-013 (README). Requires .NET Aspire workload installed (`dotnet workload install aspire`). ServiceDefaults is the canonical Aspire pattern for shared telemetry config."
+    },
+    {
+      "id": "item-014",
+      "title": "Scaffold backend xUnit test projects for SharedKernel and API",
+      "description": "As a backend developer, I need dedicated xUnit test projects (`packages/SharedKernel.Tests` and `apps/Api.Tests`) added to the .NET solution, wired with FluentAssertions and NSubstitute, so that all backend test commands (`dotnet test`) work from day one and the TDD workflow is immediately usable for item-005 (Health Check slice) and beyond.",
+      "type": "chore",
+      "priority": 4,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `dotnet test` run at the solution root, when executed, then both `SharedKernel.Tests` and `Api.Tests` projects are discovered, run, and exit with code 0 (initial state: zero tests = zero failures).",
+        "Given `SharedKernel.Tests`, when its project file is inspected, then it references the `SharedKernel` project, `xunit`, `FluentAssertions`, and `NSubstitute` NuGet packages.",
+        "Given `Api.Tests`, when its project file is inspected, then it references the `Api` project (or a placeholder), `xunit`, `FluentAssertions`, `NSubstitute`, and `Microsoft.AspNetCore.Mvc.Testing` for `WebApplicationFactory` integration tests.",
+        "Given `pnpm test:api` at the repo root, when run, then it invokes `dotnet test` and the exit code propagates correctly (0 on pass, non-zero on failure).",
+        "Given a sample xUnit fact in `SharedKernel.Tests` that asserts `1 + 1 == 2` using FluentAssertions (`1.Should().Be(1)`), when `dotnet test` runs, then it passes — proving the full test pipeline is wired."
+      ],
+      "dependencies": ["item-002", "item-003"],
+      "tags": ["backend", "dotnet", "testing", "xunit", "dx"],
+      "source_session": "bootstrap-requirements-grooming-2026-02-23",
+      "created_at": "2026-02-23T18:00:00-05:00",
+      "notes": "This item was added during grooming (health review). The original ingestion embedded test project setup inside item-002's acceptance criteria, but creating and wiring .csproj test projects to a .NET solution file is enough work to justify its own item. The Api.Tests project may reference a placeholder Api project until item-004 is merged."
+    },
+    {
+      "id": "item-004",
+      "title": "Scaffold ASP.NET Core Web API project wired to Aspire with OpenAPI",
+      "description": "As a developer, I need the `apps/Api` ASP.NET Core Web API project created, referencing ServiceDefaults, with built-in .NET 9 OpenAPI configured via `AddOpenApi()` / `MapOpenApi()` and Scalar UI, and health-check endpoints registered, so that the Aspire AppHost can orchestrate it and developers have a live API surface to build slices against.\n\n**Decision-002 LOCKED:** Use the built-in .NET 9 OpenAPI support (`Microsoft.AspNetCore.OpenApi` package) with Scalar UI for the documentation endpoint. Do NOT add Swashbuckle (`Swashbuckle.AspNetCore`). The pattern is: `builder.Services.AddOpenApi()` in service registration, and `app.MapOpenApi()` + `app.MapScalarApiReference()` in the middleware pipeline. Document this decision inline in `Program.cs` with a comment.",
+      "type": "chore",
+      "priority": 5,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `dotnet run --project apps/AppHost`, when the Aspire host starts the API project, then `GET /healthz` (or the configured ServiceDefaults health endpoint) returns HTTP 200 — this is the Aspire/ServiceDefaults `MapHealthChecks()` mapping, not the HealthCheck vertical slice.",
+        "Given the API starts in Development mode, when a developer navigates to `/scalar/v1` (or the configured Scalar UI path), then the Scalar API reference UI is rendered listing all registered endpoints — Swashbuckle is NOT used.",
+        "Given the API project `Program.cs`, when inspected, then it calls `builder.Services.AddOpenApi()` and `app.MapOpenApi()` using the built-in .NET 9 `Microsoft.AspNetCore.OpenApi` package, with a comment referencing Decision-002.",
+        "Given the API project, when `AddServiceDefaults()` is called in `Program.cs`, then OpenTelemetry and health checks are registered without any additional manual configuration.",
+        "Given the solution, when `dotnet build` is run, then the Api project compiles and all project references (SharedKernel, ServiceDefaults) resolve correctly.",
+        "Given the API project, when it is run in isolation via `dotnet run --project apps/Api`, then it starts on a configurable port and responds to HTTP requests without requiring Aspire to be running."
+      ],
+      "dependencies": ["item-002", "item-003"],
+      "tags": ["backend", "dotnet", "api", "openapi", "aspire"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-002 LOCKED: Built-in .NET 9 OpenAPI + Scalar UI. No Swashbuckle. Use Minimal APIs style (not Controllers) to keep slice endpoints lean. The health endpoint registered here (`/healthz`) is distinct from the HealthCheck VSA slice endpoint (`/health`) in item-005."
+    },
+    {
+      "id": "item-005",
+      "title": "Implement Health Check vertical slice with unit and integration tests",
+      "description": "As a developer and operator, I need a dedicated `Features/HealthCheck/` vertical slice in the API that handles `GET /health` and returns `{ \"status\": \"healthy\" }` with a 200 OK, fully tested at unit and integration level, so that the VSA pattern is established, proven, and ready to be used as a template for all future slices.",
+      "type": "feature",
+      "priority": 6,
+      "size": "large",
+      "points": 3,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given the API is running, when a client sends `GET /health`, then it receives HTTP 200 with body `{ \"status\": \"healthy\" }` and `Content-Type: application/json`.",
+        "Given the `Features/HealthCheck/` folder, when inspected, then it contains at minimum: an endpoint registration class/method, a response DTO, and a test file — all co-located in that folder.",
+        "Given the unit test for the HealthCheck handler, when run via `dotnet test`, then it passes without requiring a running server or database.",
+        "Given an integration test using `WebApplicationFactory<Program>` in `Api.Tests`, when `GET /health` is called, then the response body deserializes to `{ status: \"healthy\" }` and the status code is 200.",
+        "Given the slice implementation, when reviewed, then it uses NO MediatR — the endpoint calls the handler/service directly — and serves as the canonical VSA template for all future slices."
+      ],
+      "dependencies": ["item-004", "item-014"],
+      "tags": ["backend", "dotnet", "vertical-slice", "health-check", "testing", "template", "architecture"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "This slice intentionally has no domain complexity — its purpose is to prove the VSA folder convention and test harness work end-to-end. Future slices should reference this as the canonical pattern. Dependency on item-014 added during grooming: the Api.Tests project must exist before integration tests can be written."
+    },
+    {
+      "id": "item-006",
+      "title": "Scaffold React Vite app with TypeScript, path aliases, ESLint, and Prettier",
+      "description": "As a frontend developer, I need the `apps/web` React + Vite project bootstrapped with TypeScript strict mode, `@/` path aliases configured in both `vite.config.ts` and `tsconfig.json`, ESLint (airbnb or recommended config), and Prettier configured, so that I have a consistent, lint-enforced foundation for all React work. This gates all frontend items.\n\n**Decision-001 LOCKED:** The React Vite project lives at `apps/web/` — the `apps/` prefix is the monorepo-conventional location for runnable applications.",
+      "type": "chore",
+      "priority": 7,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `pnpm --filter web dev` (or `pnpm start` at the root), when executed, then the Vite dev server starts and `http://localhost:5173` (or configured port) serves the React app without errors.",
+        "Given a TypeScript file that uses the `@/` path alias (e.g., `import { foo } from '@/utils/foo'`), when Vite builds and the TypeScript language server resolves it, then the import resolves correctly with no errors in both `vite.config.ts` (runtime) and `tsconfig.json` (type-checking).",
+        "Given `pnpm --filter web lint`, when run, then ESLint reports zero errors on the freshly scaffolded codebase.",
+        "Given a `.prettierrc` at the workspace root or `apps/web`, when a developer runs `prettier --check .`, then all files pass formatting checks.",
+        "Given `pnpm --filter web build`, when run, then Vite produces a production bundle in `apps/web/dist/` with zero TypeScript compilation errors (`tsc --noEmit` also passes)."
+      ],
+      "dependencies": ["item-001"],
+      "tags": ["frontend", "react", "vite", "typescript", "dx", "scaffold"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-001 LOCKED: React app lives at `apps/web/`. Use `pnpm create vite` with the React-TS template as the starting point, then layer on ESLint and Prettier. The `@/` alias must be wired in BOTH `vite.config.ts` (for Vite's module resolution) and `tsconfig.json` (for the TS language server) — omitting either causes intermittent editor errors."
+    },
+    {
+      "id": "item-007",
+      "title": "Configure Vitest and React Testing Library with a passing example test",
+      "description": "As a frontend developer, I need Vitest and React Testing Library configured in the `apps/web` project with a `setupTests.ts` file and at least one passing component test, so that the TDD workflow is immediately usable and the CI `pnpm test` command exits 0. This proves the test infrastructure before any feature tests are written.",
+      "type": "chore",
+      "priority": 8,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `pnpm --filter web test` (or `pnpm test` at root), when run in CI (non-interactive, no watch mode), then all tests pass and the process exits with code 0.",
+        "Given the `vitest.config.ts`, when inspected, then it sets `environment: 'jsdom'`, includes a `setupFiles` entry pointing to `setupTests.ts`, and resolves the `@/` path alias consistently with `vite.config.ts`.",
+        "Given `setupTests.ts`, when inspected, then it imports `@testing-library/jest-dom` to extend Vitest's `expect` with DOM matchers.",
+        "Given the example component test, when it runs, then it uses `render`, `screen`, and at least one `expect(...).toBeInTheDocument()` assertion against a real rendered component (e.g., `App.tsx`) — not a trivial arithmetic assertion.",
+        "Given `pnpm --filter web test --coverage` is run, then a coverage report is generated and the command still exits 0."
+      ],
+      "dependencies": ["item-006"],
+      "tags": ["frontend", "testing", "vitest", "react-testing-library", "dx"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Use `jsdom` environment (not `happy-dom`) for widest RTL compatibility. The example test must test a real component to prove the full render pipeline works."
+    },
+    {
+      "id": "item-008",
+      "title": "Set up Storybook with a baseline Button component and story",
+      "description": "As a frontend developer and designer, I need Storybook configured in `apps/web` with a `Button` component and its `.stories.tsx` file as a baseline, so that the component catalogue workflow is established and `pnpm storybook` launches a working Storybook instance immediately. This becomes the template for all future stories.",
+      "type": "chore",
+      "priority": 9,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `pnpm --filter web storybook` (or `pnpm storybook` at root), when run, then Storybook starts and is reachable in a browser at its default port (6006) without errors.",
+        "Given the `Button` component and its `Button.stories.tsx`, when the story is viewed in Storybook, then at minimum a `Default` story and a `Disabled` story are visible and render without console errors.",
+        "Given `Button.stories.tsx`, when inspected, then it co-locates alongside `Button.tsx` in the same folder (not in a separate `stories/` directory) and uses CSF3 (Component Story Format 3) syntax.",
+        "Given `pnpm --filter web build-storybook`, when run, then a static Storybook build is produced in `storybook-static/` with exit code 0.",
+        "Given the Storybook configuration (`.storybook/main.ts`), when inspected, then it uses the Vite builder and resolves the `@/` path alias so that component imports inside stories work correctly."
+      ],
+      "dependencies": ["item-006"],
+      "tags": ["frontend", "storybook", "components", "dx", "design-system"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Use Storybook 8.x (latest stable) with the Vite builder. The `Button` component should accept at minimum `label`, `onClick`, and `disabled` props."
+    },
+    {
+      "id": "item-009",
+      "title": "Configure Playwright e2e suite with one smoke test",
+      "description": "As a developer and QA engineer, I need Playwright configured in `apps/web/e2e/` (co-located with the React app) with one smoke test that verifies the app loads and a visible heading is present, so that the e2e pipeline is proven and `pnpm test:e2e` works reliably in CI. This is the canary for any regression in the rendering pipeline.\n\n**Decision-001 LOCKED:** The React app lives at `apps/web/` — this is the monorepo apps/ convention.\n**Decision-003 LOCKED:** Playwright tests are co-located in `apps/web/e2e/` (NOT a standalone `e2e/` workspace package). A single `playwright.config.ts` lives at `apps/web/e2e/playwright.config.ts` (or at `apps/web/` root). This is the simpler path for a single frontend; it can be extracted to a standalone package later if multiple frontends are added.",
+      "type": "chore",
+      "priority": 10,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `pnpm test:e2e` at the repo root, when run against the running Vite dev server (or a built `dist/`), then Playwright executes the smoke test and exits with code 0.",
+        "Given the smoke test, when it runs, then it navigates to the app root URL, waits for the page to load, and asserts that a visible `<h1>` heading contains the expected app name — using a locator wait (not a fixed `setTimeout`).",
+        "Given `apps/web/e2e/playwright.config.ts` (or `apps/web/playwright.config.ts`), when inspected, then it sets `baseURL` from an environment variable (defaulting to `http://localhost:5173`) so CI can override the target URL.",
+        "Given the CI environment (no headed browser available), when `pnpm test:e2e` runs, then Playwright uses the `chromium` project in headless mode and does not prompt for browser installation (browsers are pre-installed via `playwright install --with-deps chromium`).",
+        "Given a test failure, when Playwright reports it, then a screenshot and trace file are saved to a `test-results/` folder (under `apps/web/`) for debugging."
+      ],
+      "dependencies": ["item-006"],
+      "tags": ["frontend", "e2e", "playwright", "testing", "ci"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-003 LOCKED: Playwright tests live in `apps/web/e2e/` (co-located with the React app), NOT a standalone `e2e/` workspace package. This is the simpler path for a single frontend. The smoke test assertion targets a visible `<h1>` (not `<title>`) for robustness — `<title>` is meta content that varies by framework and is harder to assert reliably with Playwright locators."
+    },
+    {
+      "id": "item-015",
+      "title": "Configure CORS policy on the API for local React dev server",
+      "description": "As a frontend developer, I need the ASP.NET Core API configured with a CORS policy that allows requests from the React Vite dev server origin (`http://localhost:5173`), so that browser-based API calls from the frontend work without CORS errors during local development. Without this, all frontend-to-API integration is blocked.",
+      "type": "chore",
+      "priority": 11,
+      "size": "small",
+      "points": 1,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given the API running locally and the React dev server running at `http://localhost:5173`, when the React app makes a `fetch` call to any API endpoint, then the browser receives the response without a CORS error.",
+        "Given the API `Program.cs`, when inspected, then a named CORS policy is registered via `AddCors()` and applied via `UseCors()`, with the allowed origin(s) sourced from configuration (not hardcoded) using a key such as `AllowedOrigins`.",
+        "Given the `.env.example` file, when inspected, then it includes an `AllowedOrigins` (or equivalent) variable documenting the default value of `http://localhost:5173`.",
+        "Given the API running in a non-Development environment (e.g., Production), when the CORS policy is evaluated, then it does NOT allow all origins (`AllowAnyOrigin`) — the policy is environment-aware or restricted to configured origins only."
+      ],
+      "dependencies": ["item-004", "item-006"],
+      "tags": ["backend", "dotnet", "cors", "dx", "frontend", "security"],
+      "source_session": "bootstrap-requirements-grooming-2026-02-23",
+      "created_at": "2026-02-23T18:00:00-05:00",
+      "notes": "This item was added during grooming (health review). CORS is a blocking prerequisite for any frontend↔API integration and was missing from the original backlog. Size is `small` (1pt) because it is a well-understood, single-layer configuration change."
+    },
+    {
+      "id": "item-010",
+      "title": "Wire root orchestration scripts for single-command start and test",
+      "description": "As a developer, I need the root `package.json` scripts (`start`, `test`, `test:e2e`, `test:api`, `storybook`, `build`) fully implemented using `concurrently` or `pnpm --recursive run` so that all developer workflows launch from a single command at the repo root. This is the capstone DX item that ties together everything already scaffolded.",
+      "type": "chore",
+      "priority": 12,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `pnpm start` at the repo root, when run, then the .NET Aspire AppHost and the React Vite dev server both start concurrently, each logging to the terminal with a distinguishable prefix, and a Ctrl+C stops both.",
+        "Given `pnpm test` at the repo root, when run in CI (no watch mode, `--ci` flag passed to Vitest), then Vitest runs all frontend unit and component tests and exits with the correct code (0 on pass, non-zero on failure).",
+        "Given `pnpm test:e2e` at the repo root, when run, then Playwright executes e2e tests and exits with the correct code.",
+        "Given `pnpm test:api` at the repo root, when run, then `dotnet test` is invoked for all .NET test projects and exits with the correct code.",
+        "Given `pnpm storybook` at the repo root, when run, then Storybook starts at port 6006 without errors.",
+        "Given `pnpm build` at the repo root, when run, then both the Vite frontend production build and the .NET API `dotnet publish` complete successfully and exit 0."
+      ],
+      "dependencies": ["item-003", "item-004", "item-006", "item-007", "item-008", "item-009"],
+      "tags": ["dx", "scripts", "monorepo", "ci", "orchestration", "testing"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Use `concurrently` (npm package) for `pnpm start` to run both the Aspire host and Vite in parallel. For `pnpm test` and `pnpm build`, sequential `pnpm --recursive run` or explicit filter calls are acceptable. Added item-008 as a dependency (grooming fix) since `pnpm storybook` is one of the scripts. Added `pnpm storybook` as AC (grooming fix — it was missing)."
+    },
+    {
+      "id": "item-011",
+      "title": "Add .env.example with all required environment variables documented",
+      "description": "As a developer onboarding to the project, I need a `.env.example` file at the repo root (and optionally per-app) listing every required and optional environment variable with a description and safe default value, so that I can configure a working local environment without reverse-engineering the codebase or asking colleagues.",
+      "type": "chore",
+      "priority": 13,
+      "size": "small",
+      "points": 1,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `.env.example` at the repo root, when inspected, then every environment variable consumed by any app in the monorepo is listed with an inline comment describing its purpose.",
+        "Given `.env.example`, when a developer copies it to `.env` without changing any values, then `pnpm start` runs without crashing due to missing environment variables (i.e., all required vars have safe defaults).",
+        "Given `.gitignore`, when inspected, then `.env` and `.env.local` are excluded but `.env.example` is tracked.",
+        "Given the `.env.example` file, when inspected, then it includes at minimum: `VITE_API_BASE_URL`, `ASPNETCORE_ENVIRONMENT`, `ASPNETCORE_URLS`, `ASPNETCORE_HTTP_PORTS`, and `AllowedOrigins` (from item-015 CORS configuration)."
+      ],
+      "dependencies": ["item-004", "item-006", "item-015"],
+      "tags": ["dx", "configuration", "environment", "chore"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Never commit real secrets or API keys to `.env.example` — use placeholder values like `your-secret-here`. Added item-015 as a dependency (grooming fix) since `AllowedOrigins` is a new env var introduced by the CORS item. Added `ASPNETCORE_HTTP_PORTS` to AC4 for .NET 9+ compatibility."
+    },
+    {
+      "id": "item-012",
+      "title": "Add Docker Compose alternative local start for non-Aspire environments",
+      "description": "As a developer who does not have the .NET Aspire workload installed (e.g., running on Linux CI or a constrained machine), I need a `docker-compose.yml` at the repo root that starts the API and any infrastructure services, so that I can run the full stack locally without requiring the Aspire tooling. This is a fallback, not the primary path.\n\n**Decision-004 LOCKED:** Docker Compose IS included in this release (not deferred). Rationale: this is a greenfield repo that will likely be shared publicly; requiring the Aspire workload creates real onboarding friction for contributors without Windows/Mac dev environments. The Docker Compose path is the fallback for Linux contributors and CI environments that cannot run Aspire.",
+      "type": "chore",
+      "priority": 14,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given `docker compose up --build` at the repo root, when run on a machine with Docker Desktop or Docker Engine installed, then the API container starts and `GET /health` returns `{ \"status\": \"healthy\" }`.",
+        "Given the `docker-compose.yml`, when inspected, then it defines the `api` service with a multi-stage Dockerfile path, correct port mapping, and environment variables sourced from `.env.example` defaults.",
+        "Given `docker compose up`, when the API is running, then the React dev server (started separately with `pnpm --filter web dev`) can reach the API at the configured `VITE_API_BASE_URL` without CORS errors.",
+        "Given the Dockerfile for the API, when inspected, then it uses a multi-stage build: a `sdk` stage for compiling and an `aspnet` runtime stage for the final image.",
+        "Given the README Getting Started section (item-013), when read, then it clearly explains when to use Aspire vs Docker Compose and documents the exact command for each path."
+      ],
+      "dependencies": ["item-004", "item-011"],
+      "tags": ["docker", "infrastructure", "dx", "ci", "optional"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-004 LOCKED: Docker Compose is included (not deferred). Added AC4 (multi-stage Dockerfile) and AC5 (README cross-reference) during grooming for completeness."
+    },
+    {
+      "id": "item-016",
+      "title": "Add GitHub Actions CI pipeline running all test suites",
+      "description": "As a developer and team lead, I need a GitHub Actions workflow file (`.github/workflows/ci.yml`) that runs on every push and pull request to `main`, executing `pnpm test`, `pnpm test:api`, and `pnpm build`, so that regressions are caught automatically before merge and the repo fulfils the 'CI-ready' requirement from the project definition of done.",
+      "type": "chore",
+      "priority": 15,
+      "size": "medium",
+      "points": 2,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given a push or pull request to the `main` branch, when the GitHub Actions workflow runs, then it executes `pnpm install`, `pnpm test` (Vitest), and `pnpm test:api` (dotnet test) in sequence and fails the build if any step exits non-zero.",
+        "Given the workflow file, when inspected, then it sets up both the Node.js runtime (matching `.nvmrc`) and the .NET SDK (matching the project's target framework) before running any commands.",
+        "Given the CI run, when `pnpm test:api` executes, then the `dotnet test` command includes `--no-restore` and `--logger trx` to avoid redundant restores and produce a parseable test results file.",
+        "Given the CI run, when all steps pass, then `pnpm build` (Vite production build) is also executed to verify the frontend compiles cleanly.",
+        "Given the workflow, when inspected, then it caches the `pnpm store` and the `.nuget/packages` directories to reduce CI run time on subsequent runs."
+      ],
+      "dependencies": ["item-010"],
+      "tags": ["ci", "devops", "github-actions", "testing"],
+      "source_session": "bootstrap-requirements-grooming-2026-02-23",
+      "created_at": "2026-02-23T18:00:00-05:00",
+      "notes": "This item was added during grooming (health review). The original requirements stated 'CI-ready: all test commands exit with correct codes; no interactive prompts' but no item provisioned the actual CI workflow file. The Playwright e2e suite is intentionally excluded from the initial CI pipeline to keep the first workflow fast — add it as a follow-on item if needed."
+    },
+    {
+      "id": "item-013",
+      "title": "Write README with Getting Started, prerequisites, and all dev commands",
+      "description": "As a new developer joining the project, I need a comprehensive README.md at the repo root that covers prerequisites, install steps, how to start the app (both Aspire and Docker Compose paths), how to run all test suites, and how to launch Storybook, so that I can be productive within 30 minutes of cloning the repo without needing to ask anyone for help.\n\n**Decision-004 note:** The README must document both the Aspire path (`pnpm start`) and the Docker Compose fallback path (`docker compose up --build`) with clear guidance on when to use each.\n**Decision-005 note:** The README Prerequisites section must include `dotnet dev-certs https --trust` as a required one-time setup step for HTTPS trust to work with the Aspire dashboard.",
+      "type": "chore",
+      "priority": 16,
+      "size": "small",
+      "points": 1,
+      "status": "pending",
+      "acceptance_criteria": [
+        "Given the README, when read by a developer unfamiliar with the project, then the Prerequisites section lists all required tools with minimum versions: Node.js, pnpm, .NET SDK, .NET Aspire workload, Docker (optional), and includes the `dotnet dev-certs https --trust` command as a required one-time setup step.",
+        "Given the README Getting Started section, when followed step-by-step from a fresh clone, then the developer can run `pnpm install && pnpm start` and have the app running within the documented steps.",
+        "Given the README, when inspected, then it documents every root `package.json` script (`start`, `test`, `test:e2e`, `test:api`, `storybook`, `build`) with a one-line description of what each does.",
+        "Given the README, when inspected, then it includes a project structure section showing the top-level folder layout and explaining the purpose of each major directory (`apps/`, `packages/`, `.github/`) — note: Playwright tests are co-located at `apps/web/e2e/`, not a top-level `e2e/` directory.",
+        "Given the README, when inspected, then it has a dedicated section explaining when to use Aspire (`pnpm start`) vs Docker Compose (`docker compose up --build`) for local development.",
+        "Given the README, when inspected, then it includes a link to or inline copy of the project Definition of Done for contributing developers."
+      ],
+      "dependencies": ["item-010", "item-011", "item-012", "item-016"],
+      "tags": ["documentation", "dx", "onboarding", "readme"],
+      "source_session": "bootstrap-requirements-ingestion-2026-02-23",
+      "created_at": "2026-02-23T17:57:19-05:00",
+      "notes": "Decision-004 LOCKED: README must document Docker Compose path. Decision-005 LOCKED: README Prerequisites must include dev-certs command. Write the README last so it accurately reflects what was actually built. AC4 updated to note Playwright is co-located at `apps/web/e2e/` (Decision-003), not a top-level `e2e/` directory."
+    }
+  ]
+}

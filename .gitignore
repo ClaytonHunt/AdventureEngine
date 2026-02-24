@@ -1,0 +1,55 @@
+# Node
+node_modules/
+dist/
+build/
+.turbo/
+
+# pnpm
+.pnpm-store/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+
+# .NET User Secrets (never commit)
+# Windows: %APPDATA%\Microsoft\UserSecrets
+# macOS/Linux: ~/.microsoft/usersecrets
+
+# ASP.NET Core / Aspire
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+launchSettings.json
+.aspire/
+
+# NuGet packages — packages.lock.json files MUST be committed (used for CI --locked-mode)
+*.nupkg
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# JetBrains
+.idea/
+*.iml
+
+# VS Code (keep shared config templates, ignore personal settings)
+.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json.template
+
+# Playwright
+playwright-report/
+test-results/

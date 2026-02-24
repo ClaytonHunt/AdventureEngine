@@ -1,0 +1,31 @@
+{
+  "name": "Code Review",
+  "description": "Deep code review: scout the codebase, review for quality, then document",
+  "initial": "reconnaissance",
+  "states": {
+    "reconnaissance": {
+      "description": "Explore and map the codebase",
+      "agent": "scout",
+      "next": ["review"],
+      "requires_approval": false
+    },
+    "review": {
+      "description": "Deep quality, security, and correctness review",
+      "agent": "reviewer",
+      "next": ["documentation", "reconnaissance"],
+      "requires_approval": false
+    },
+    "documentation": {
+      "description": "Write the structured review report",
+      "agent": "documenter",
+      "next": ["done"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Review complete",
+      "agent": "planner",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

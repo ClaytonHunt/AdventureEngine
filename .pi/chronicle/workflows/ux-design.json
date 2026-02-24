@@ -1,0 +1,32 @@
+{
+  "name": "UX Design",
+  "description": "Scout the codebase, design the UX, then hand off to engineering",
+  "initial": "discovery",
+  "states": {
+    "discovery": {
+      "description": "Explore existing UI patterns, components, and user flows",
+      "agent": "scout",
+      "next": ["design"],
+      "requires_approval": false
+    },
+    "design": {
+      "description": "Design user flows, wireframes, and component specifications",
+      "agent": "ux-designer",
+      "extra_skills": [],
+      "next": ["engineering-handoff", "discovery"],
+      "requires_approval": true
+    },
+    "engineering-handoff": {
+      "description": "Produce implementation-ready specs, component list, and acceptance criteria",
+      "agent": "tech-writer",
+      "next": ["done"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Design complete — specifications ready for engineering",
+      "agent": "documenter",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

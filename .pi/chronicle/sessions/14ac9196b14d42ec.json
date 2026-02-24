@@ -1,0 +1,179 @@
+{
+  "id": "14ac9196b14d42ec",
+  "workflowName": "Backlog Grooming",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\backlog-grooming.json",
+  "workflowDef": {
+    "name": "Backlog Grooming",
+    "description": "Ingest raw requirements or groom the existing backlog — decompose oversized items, write acceptance criteria, assign sizes, and establish priority order",
+    "initial": "ingestion",
+    "states": {
+      "ingestion": {
+        "description": "Take raw requirements and decompose them into properly-sized, prioritized backlog items — write all new items to backlog.json",
+        "agent": "backlog-manager",
+        "next": [
+          "review"
+        ],
+        "requires_approval": false
+      },
+      "review": {
+        "description": "Review the updated backlog for health — check sizing, acceptance criteria completeness, dependencies, and priority order",
+        "agent": "backlog-manager",
+        "next": [
+          "done",
+          "ingestion"
+        ],
+        "requires_approval": false
+      },
+      "done": {
+        "description": "Grooming complete — summarize the backlog state and note what is ready for sprint planning",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1771887405363,
+  "lastUpdated": 1771888104468,
+  "currentState": "done",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "startedAt": 1771887405363,
+      "completedAt": 1771887438448,
+      "summary": "Workflow started — raw requirements received from the user and ready for decomposition.",
+      "tokensUsed": 1703,
+      "elapsed": 0,
+      "taskGiven": "\n## Raw Requirements — Decompose into Backlog\n\nThe user wants to bootstrap a brand-new full-stack web application from scratch. Decompose every requirement below into well-sized, independently deliverable backlog items, write acceptance criteria for each, assign t-shirt/story-point sizes, and record the priority-ordered result in `backlog.json`.\n\n---\n\n### Tech Stack\n| Layer | Technology |\n|---|---|\n| Frontend | React (Vite or CRA, prefer Vite) |\n| Backend API | ASP.NET Core (latest LTS) |\n| Orchestration | .NET Aspire |\n| Component Catalogue | Storybook (React) |\n| Testing — Frontend | Vitest + React Testing Library (unit/component) + Playwright (e2e) |\n| Testing — Backend | xUnit + FluentAssertions + NSubstitute (unit/integration) |\n| Package manager | pnpm (preferred) with npm fallback |\n\n---\n\n### Architecture Constraints\n1. **Vertical Slice Architecture** — features are self-contained folders (`/Features/<FeatureName>/`) containing endpoint, handler/service, DTOs, domain models, validators, and tests for that slice. **No MediatR.**\n2. Vertical slices wrap **Clean Architecture** layers conceptually (Domain → Application → Infrastructure → Presentation) but they are co-located within each slice, not in global layer folders.\n3. **Domain-Driven Design** building blocks inside each slice: Entities, Value Objects, Aggregates, Domain Events, Repository interfaces.\n4. Shared kernel (`/SharedKernel/`) for base classes (Entity, ValueObject, AggregateRoot, DomainEvent, IRepository<T>, Result<T>, Error).\n\n---\n\n### Developer Experience Requirements\n1. **Single command start**: `pnpm start` (or `npm start`) from the repo root must spin up:\n   - .NET Aspire AppHost (which launches the ASP.NET API + any infra services)\n   - React Vite dev server (proxied or via Aspire dashboard)\n   - A concurrently/compound script ties everything together\n2. **Single command test**: `pnpm test` runs all frontend unit + component tests; `pnpm test:e2e` for Playwright; `dotnet test` for backend (or wrap it in `pnpm test:api`).\n3. **Storybook**: `pnpm storybook` launches Storybook; stories live alongside components in `*.stories.tsx` files.\n\n---\n\n### Specific Items to Cover (at minimum — add more as needed)\n- Repo / monorepo scaffolding (folder structure, `.gitignore`, root `package.json` with workspace scripts)\n- .NET Aspire AppHost + ServiceDefaults project setup\n- ASP.NET Core Web API project wired to Aspire with health checks, OpenAPI/Swagger\n- Shared Kernel library (C# class library)\n- First vertical slice scaffold: **\"Health Check\" slice** — `GET /health` returns `{ status: \"healthy\" }`, fully tested (unit + integration)\n- React + Vite project setup with TypeScript, path aliases, ESLint + Prettier\n- TDD config for frontend: Vitest + React Testing Library setup with example passing test\n- Storybook 7/8 setup in the React project with a `Button` component + story as a baseline\n- Playwright e2e config with one smoke test (app loads, page title visible)\n- Root `package.json` orchestration scripts (`start`, `test`, `test:e2e`, `test:api`, `storybook`, `build`)\n- CI-ready: all test commands exit with correct codes; no interactive prompts\n- README with \"Getting Started\" instructions (prerequisites, install, start, test)\n- `.env.example` for any required environment variables\n- Docker Compose (optional but desired) as an alternative local start if Aspire is not available\n\n---\n\n### Definition of Done (applies to all items)\n- Acceptance criteria are written in Given/When/Then or checklist form\n- Each item is independently deployable or mergeable\n- No item exceeds **8 story points** (split anything larger)\n- Dependencies between items are noted\n- Priority reflects the order a developer should pick them up (foundations first)\n\nWrite the full groomed backlog to `backlog.json` using this schema:\n```json\n[\n  {\n    \"id\": \"ITEM-001\",\n    \"title\": \"...\",\n    \"description\": \"...\",\n    \"acceptanceCriteria\": [\"...\"],\n    \"size\": 3,\n    \"priority\": 1,\n    \"status\": \"ready\",\n    \"tags\": [\"...\"],\n    \"dependencies\": []\n  }\n]\n```\n",
+      "outputPreview": "Workflow started — raw requirements received from the user and ready for decomposition."
+    },
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "startedAt": 1771887438448,
+      "completedAt": 1771887611544,
+      "summary": "Ingestion complete — 13 items written to backlog.json, 25 story points total, across two parallel tracks (backend items 001-005, frontend items 006-009) converging at item-010 (orchestration scripts).",
+      "tokensUsed": 4156,
+      "elapsed": 140718,
+      "taskGiven": "\n## Backlog Health Review\n\nThe ingestion agent has just written 13 items to `backlog.json` (25 story points). Please perform a full health review of the backlog against the criteria below and produce a written report. Fix any issues directly in `backlog.json`.\n\n---\n\n### What Was Built (Context)\nA brand-new full-stack web application scaffold with:\n- **React + Vite** frontend (TypeScript, ESLint, Prettier)\n- **ASP.NET Core** Web API using **Vertical Slice Architecture** (no MediatR) wrapping Clean Architecture + DDD\n- **.NET Aspire** orchestration (AppHost + ServiceDefaults)\n- **SharedKernel** C# class library (Entity, ValueObject, AggregateRoot, DomainEvent, IRepository<T>, Result<T>, Error)\n- **Storybook** for component catalogue\n- **TDD config**: Vitest + React Testing Library (frontend), xUnit + FluentAssertions + NSubstitute (backend), Playwright (e2e)\n- **Root orchestration**: `pnpm start`, `pnpm test`, `pnpm test:e2e`, `pnpm test:api`, `pnpm storybook`\n- **Docker Compose** as optional non-Aspire alternative\n\n### Current Backlog Summary\n| ID | Title | Size (pts) | Priority |\n|---|---|---|---|\n| item-001 | Scaffold monorepo folder structure + root package.json | 2 | 1 |\n| item-002 | Create SharedKernel C# class library with base DDD building blocks | 2 | 2 |\n| item-003 | Set up .NET Aspire AppHost and ServiceDefaults | 2 | 3 |\n| item-004 | Scaffold ASP.NET Core Web API wired to Aspire with OpenAPI | 2 | 4 |\n| item-005 | Health Check vertical slice with unit + integration tests | 3 | 5 |\n| item-006 | Scaffold React Vite app with TypeScript, path aliases, ESLint, Prettier | 2 | 6 |\n| item-007 | Configure Vitest + React Testing Library with passing example test | 2 | 7 |\n| item-008 | Set up Storybook with baseline Button component + story | 2 | 8 |\n| item-009 | Configure Playwright e2e suite with one smoke test | 2 | 9 |\n| item-010 | Wire root orchestration scripts for single-command start and test | 2 | 10 |\n| item-011 | Add .env.example with all environment variables documented | 1 | 11 |\n| item-012 | Add Docker Compose alternative local start | 2 | 12 |\n| item-013 | Write README with Getting Started + dev commands | 1 | 13 |\n\n### Dependency Chain (from ingestion)\n```\nitem-001\n  ├── Backend track: item-002 → item-003 → item-004 → item-005\n  ├── Frontend track: item-006 → item-007 → item-008 → item-009\n  └── Convergence: item-010 → item-011 → item-013\n                           └── item-012 (optional)\n```\n\n---\n\n### Health Check Criteria\n\n1. **Sizing** — No item exceeds 8 story points. Flag any that feel over- or under-estimated.\n2. **Acceptance Criteria completeness** — Every item must have at least 3 concrete, testable AC statements (Given/When/Then or checklist). Add any that are missing or vague.\n3. **Dependencies** — Verify the `dependencies` array in each item is accurate. Check for missing or circular dependencies.\n4. **Priority order** — Foundations-first ordering. Confirm this makes sense for a single developer starting from zero.\n5. **Missing items** — Are there any gaps? Specifically check for:\n   - CI/CD pipeline config (GitHub Actions or similar) — should this be in scope?\n   - ESLint/Prettier config files (covered within item-006, or separate?)\n   - `tsconfig.json` / `vitest.config.ts` / `vite.config.ts` scaffolding (covered within items, or separate?)\n   - Any missing backend test projects (xUnit projects wired to the API/SharedKernel)\n   - Aspire dashboard access / HTTPS dev certificate setup\n   - CORS configuration for local dev (React dev server ↔ ASP.NET API)\n6. **Tags** — Ensure each item has appropriate tags (e.g., `backend`, `frontend`, `devops`, `testing`, `dx`, `architecture`).\n7. **Status** — All items should be `\"ready\"` at this stage.\n\n### Instructions\n- Read `backlog.json`\n- Apply all fixes directly (update AC, fix dependencies, adjust sizes/priority if needed, add missing items)\n- Write the corrected backlog back to `backlog.json`\n- Produce a written review report with: issues found, changes made, and final health verdict\n",
+      "outputPreview": "Ingestion complete — 13 items written to backlog.json, 25 story points total, across two parallel tracks (backend items 001-005, frontend items 006-009) converging at item-010 (orchestration scripts)."
+    },
+    {
+      "state": "review",
+      "agentName": "backlog-manager",
+      "startedAt": 1771887611544,
+      "completedAt": 1771887918159,
+      "summary": "Review complete — backlog expanded from 13 to 16 items (31 story points). Three new items added (xUnit test projects, CORS config, GitHub Actions CI), dependency chain corrected, acceptance criteria hardened, and priority order revised. All 16 items are status=pending and ready for sprint planning.",
+      "tokensUsed": 577,
+      "elapsed": 267972,
+      "taskGiven": "\n## Grooming Complete — Write Final Summary\n\nThe backlog grooming session is complete. Please write a polished, developer-facing summary of the groomed backlog state. This summary will be the top-level deliverable handed to the team before sprint planning.\n\n---\n\n### Final Backlog State (for context)\n\n**16 items | ~31 story points | All status = pending | Written to `backlog.json`**\n\n| ID | Title | Size (pts) | Priority | Tags |\n|---|---|---|---|---|\n| item-001 | Scaffold monorepo folder structure + root package.json | 2 | 1 | monorepo, scaffold, chore |\n| item-002 | Create SharedKernel C# class library with DDD building blocks | 2 | 2 | backend, dotnet, architecture, ddd |\n| item-003 | Set up .NET Aspire AppHost and ServiceDefaults | 2 | 3 | backend, dotnet, aspire, infrastructure |\n| item-014 | Scaffold backend xUnit test projects and wire to solution | 2 | 4 | backend, dotnet, testing, xunit, dx |\n| item-004 | Scaffold ASP.NET Core Web API wired to Aspire with OpenAPI | 2 | 5 | backend, dotnet, api, openapi, aspire |\n| item-005 | Health Check vertical slice with unit + integration tests | 3 | 6 | backend, dotnet, vsa, architecture, testing |\n| item-006 | Scaffold React Vite app with TypeScript, path aliases, ESLint, Prettier | 2 | 7 | frontend, react, vite, typescript, dx |\n| item-007 | Configure Vitest + React Testing Library with passing example test | 2 | 8 | frontend, testing, vitest, rtl, tdd |\n| item-008 | Set up Storybook with baseline Button component + story | 2 | 9 | frontend, storybook, ux, component |\n| item-009 | Configure Playwright e2e suite with one smoke test | 2 | 10 | frontend, testing, e2e, playwright |\n| item-015 | Configure CORS policy for React dev server ↔ ASP.NET API | 1 | 11 | backend, dotnet, cors, dx, frontend |\n| item-010 | Wire root orchestration scripts for single-command start + test | 2 | 12 | dx, scripts, monorepo, testing, devops |\n| item-011 | Add .env.example with all environment variables documented | 1 | 13 | dx, config, environment |\n| item-012 | Add Docker Compose alternative local start | 2 | 14 | devops, docker, infrastructure, optional |\n| item-016 | GitHub Actions CI pipeline (test + build on PR) | 2 | 15 | ci, devops, github-actions, testing |\n| item-013 | Write README with Getting Started + dev commands | 1 | 16 | documentation, dx, readme |\n\n---\n\n### Dependency Graph\n```\nitem-001 (monorepo root)\n  ├── BACKEND TRACK\n  │   ├── item-002 (SharedKernel)\n  │   │   └── item-014 (xUnit test projects)\n  │   ├── item-003 (Aspire AppHost)\n  │   │   └── item-004 (ASP.NET Web API)  ← depends on 002 + 003\n  │   │       └── item-005 (Health Check slice)  ← depends on 004 + 014\n  │\n  ├── FRONTEND TRACK\n  │   └── item-006 (React Vite)\n  │       ├── item-007 (Vitest + RTL)\n  │       ├── item-008 (Storybook)\n  │       └── item-009 (Playwright e2e)\n  │\n  └── CONVERGENCE\n      ├── item-015 (CORS)  ← depends on 004 + 006\n      ├── item-010 (orchestration scripts)  ← depends on 003+004+006+007+008+009+015\n      │   ├── item-011 (.env.example)  ← depends on 004+006\n      │   ├── item-012 (Docker Compose)  ← depends on 004+011, optional\n      │   └── item-016 (GitHub Actions)  ← depends on 010+016\n      └── item-013 (README)  ← depends on 010+011+012\n```\n\n---\n\n### Pre-Sprint Decisions Needed\n1. **Folder convention**: `apps/` vs `src/` — decide before item-001\n2. **OpenAPI tooling**: Built-in .NET 9 OpenAPI vs Swashbuckle — decide before item-004\n3. **e2e placement**: `apps/web/e2e/` vs standalone `e2e/` workspace package — decide before item-009\n4. **Docker Compose scope**: Is item-012 in this release or deferred? (currently optional)\n5. **One-time dev machine setup**: `dotnet dev-certs https --trust` must be run before Aspire starts (note for onboarding)\n\n---\n\n### What to Produce\nPlease write a comprehensive `GROOMING_SUMMARY.md` file that includes:\n1. **Executive Summary** — what was groomed, how many items, total points\n2. **Backlog at a Glance** — a clean table of all 16 items\n3. **Dependency Map** — the graph above, formatted clearly\n4. **Sprint Planning Suggestions** — how the work could be split across sprints (at 6pt capacity) and which items can be parallelised\n5. **Pre-Sprint Decisions Required** — the 5 items above, with recommended defaults\n6. **Definition of Ready** — reminder of the criteria each item meets\n7. **How to Read the Backlog** — brief guide to `backlog.json` schema\n8. **Next Steps** — what happens after grooming (sprint planning, first commit, etc.)\n\nSave the file as `GROOMING_SUMMARY.md` in the repo root.\n",
+      "outputPreview": "Review complete — backlog expanded from 13 to 16 items (31 story points). Three new items added (xUnit test projects, CORS config, GitHub Actions CI), dependency chain corrected, acceptance criteria hardened, and priority order revised. All 16 items are status=pending and ready for sprint planning."
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      "backlog.json",
+      "GROOMING_SUMMARY.md"
+    ],
+    "keyFindings": [
+      "13 backlog items created, totalling 25 story points across two parallel tracks (backend + frontend)",
+      "Dependency chain: item-001 (monorepo scaffold) is the root dependency for all other items",
+      "Backend track: item-001 → item-002 (SharedKernel) → item-003 (Aspire) → item-004 (API) → item-005 (HealthCheck slice)",
+      "Frontend track: item-001 → item-006 (Vite/React) → item-007 (Vitest/RTL) → item-008 (Storybook) → item-009 (Playwright)",
+      "Both tracks converge at item-010 (root orchestration scripts) → item-011 (.env.example) → item-013 (README)",
+      "item-012 (Docker Compose) is optional — needs stakeholder confirmation",
+      "Sizes: 1×small(1pt), 10×medium(2pt), 1×large(3pt), 1×large(3pt) — all under the 8pt cap",
+      "Architecture decisions to confirm before coding: folder convention (apps/ vs src/), OpenAPI tooling (built-in vs Swashbuckle), e2e placement",
+      "Two developers can parallelise backend and frontend tracks after item-001, potentially collapsing 6 sprints to 2-3",
+      "Review added 3 new items: item-014 (xUnit test projects), item-015 (CORS configuration), item-016 (GitHub Actions CI pipeline)",
+      "Final backlog: 16 items, ~31 story points, all status=pending",
+      "Priority order revised: item-014 inserted at priority 4 (after SharedKernel, before API), item-015 at priority 11 (after Playwright, before orchestration), item-016 at priority 15 (after Docker Compose, before README)",
+      "Dependency fixes: item-010 now lists item-008 as a dependency (Storybook script); item-013 now lists item-012 as a dependency (Docker Compose path in README)",
+      "AC fixes: item-004 health endpoint wording clarified; item-009 Playwright assertion tightened to visible heading; item-010 gained pnpm storybook AC; item-013 gained Docker Compose section AC",
+      "Tag fixes: item-005 gained 'architecture' tag; item-010 gained 'testing' tag",
+      "All items confirmed under 8-point cap; all items have status=pending",
+      "New parallel track structure: backend (001-003-014-004-005) and frontend (006-007-008-009) both converge at item-015 (CORS) then item-010 (orchestration)",
+      "item-012 (Docker Compose) remains optional — confirmed in tags and description",
+      "GROOMING_SUMMARY.md written to repo root with 8 sections covering executive summary, backlog table, dependency map, sprint planning suggestions, pre-sprint decisions, and next steps",
+      "backlog.json confirmed written and valid with all 16 items",
+      "Workflow reached terminal Done state — grooming session complete",
+      "All items have status=ready, acceptance criteria, sizes, priorities, tags, and dependency arrays"
+    ],
+    "pendingTasks": [
+      "Review backlog for sizing health, AC completeness, dependency correctness, and priority order",
+      "Confirm optional item-012 (Docker Compose) scope with stakeholder",
+      "Resolve folder convention, OpenAPI tooling, and e2e placement decisions before sprint planning",
+      "Stakeholder decision needed: is item-012 (Docker Compose) in scope for this release?",
+      "Confirm folder convention (apps/ vs src/) before item-001 is picked up",
+      "Confirm OpenAPI tooling: built-in .NET 9 OpenAPI vs Swashbuckle (item-004)",
+      "Confirm e2e placement: co-located apps/web/e2e/ vs standalone e2e/ package (item-009)",
+      "Run dotnet dev-certs https --trust as a one-time setup step (note for README item-013)",
+      "Backlog is now ready for sprint planning",
+      "Resolve 5 pre-sprint decisions (folder convention, OpenAPI tooling, Playwright placement, Docker Compose scope, dev cert onboarding)",
+      "Run sprint planning session using GROOMING_SUMMARY.md as input",
+      "First sprint should start with item-001 (monorepo scaffold) as the root unblocking item"
+    ],
+    "custom": {
+      "total_items": 13,
+      "total_story_points": 25,
+      "statuses": {
+        "ready": 13
+      },
+      "size_distribution": {
+        "small": 2,
+        "medium": 10,
+        "large": 1
+      },
+      "parallel_tracks": [
+        "backend: items 001-005",
+        "frontend: items 006-009"
+      ],
+      "convergence_item": "item-010",
+      "optional_items": [
+        "item-012"
+      ],
+      "final_item_count": 16,
+      "final_story_points": 31,
+      "items_added_in_review": [
+        "item-014",
+        "item-015",
+        "item-016"
+      ],
+      "items_modified_in_review": [
+        "item-004",
+        "item-005",
+        "item-009",
+        "item-010",
+        "item-013"
+      ],
+      "sprint_ready": true,
+      "new_priority_order": [
+        "item-001",
+        "item-002",
+        "item-003",
+        "item-014",
+        "item-004",
+        "item-005",
+        "item-006",
+        "item-007",
+        "item-008",
+        "item-009",
+        "item-015",
+        "item-010",
+        "item-011",
+        "item-012",
+        "item-016",
+        "item-013"
+      ]
+    }
+  },
+  "transitionCounts": {
+    "ingestion->ingestion": 1,
+    "ingestion->review": 1,
+    "review->done": 1
+  },
+  "totalTokens": 6436,
+  "totalElapsed": 587867,
+  "status": "done"
+}

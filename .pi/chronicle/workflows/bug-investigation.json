@@ -1,0 +1,31 @@
+{
+  "name": "Bug Investigation",
+  "description": "Systematically investigate, reproduce, fix, and verify a bug",
+  "initial": "triage",
+  "states": {
+    "triage": {
+      "description": "Understand and locate the bug",
+      "agent": "scout",
+      "next": ["fixing"],
+      "requires_approval": false
+    },
+    "fixing": {
+      "description": "Apply the minimal correct fix",
+      "agent": "builder",
+      "next": ["verification", "triage"],
+      "requires_approval": false
+    },
+    "verification": {
+      "description": "Verify fix and check for regressions",
+      "agent": "reviewer",
+      "next": ["done", "fixing"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Bug resolved — post-mortem",
+      "agent": "documenter",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

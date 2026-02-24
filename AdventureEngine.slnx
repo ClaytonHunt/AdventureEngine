@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/apps/" />
+  <Folder Name="/apps/AppHost/">
+    <Project Path="apps/AppHost/AdventureEngine.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/packages/" />
+  <Folder Name="/packages/ServiceDefaults/">
+    <Project Path="packages/ServiceDefaults/AdventureEngine.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/packages/SharedKernel.Tests/">
+    <Project Path="packages/SharedKernel.Tests/AdventureEngine.SharedKernel.Tests.csproj" />
+  </Folder>
+  <Folder Name="/packages/SharedKernel/">
+    <Project Path="packages/SharedKernel/AdventureEngine.SharedKernel.csproj" />
+  </Folder>
+</Solution>

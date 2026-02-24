@@ -1,0 +1,82 @@
+{
+  "id": "d4cee9f26e1e5a13",
+  "workflowName": "Backlog Grooming",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\backlog-grooming.json",
+  "workflowDef": {
+    "name": "Backlog Grooming",
+    "description": "Ingest raw requirements or groom the existing backlog — decompose oversized items, write acceptance criteria, assign sizes, and establish priority order",
+    "initial": "ingestion",
+    "states": {
+      "ingestion": {
+        "description": "Take raw requirements and decompose them into properly-sized, prioritized backlog items — write all new items to backlog.json",
+        "agent": "backlog-manager",
+        "next": [
+          "review"
+        ],
+        "requires_approval": false
+      },
+      "review": {
+        "description": "Review the updated backlog for health — check sizing, acceptance criteria completeness, dependencies, and priority order",
+        "agent": "backlog-manager",
+        "next": [
+          "done",
+          "ingestion"
+        ],
+        "requires_approval": false
+      },
+      "done": {
+        "description": "Grooming complete — summarize the backlog state and note what is ready for sprint planning",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1771884948877,
+  "lastUpdated": 1771885194656,
+  "currentState": "ingestion",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "startedAt": 1771884948877,
+      "completedAt": 1771885184111,
+      "summary": "Starting the workflow — no prior state completed. Kicking off ingestion of raw requirements.",
+      "tokensUsed": 0,
+      "elapsed": 0,
+      "taskGiven": "Decompose the following raw requirements into a properly-sized, prioritized backlog. Write all items to backlog.json.\n\n## Raw Requirements\n\nBuild a new web application from scratch with the following technology and architecture constraints:\n\n### Tech Stack\n- **Frontend:** React (TypeScript preferred)\n- **Backend:** ASP.NET Core (C#)\n- **Orchestration:** .NET Aspire (for local dev orchestration and service defaults)\n- **Package manager:** pnpm (or npm) for the frontend\n\n### Architecture Pattern\n- **Vertical Slice Architecture** (NOT MediatR — use plain handler classes or minimal API delegates)\n- Wrapping **Clean Architecture** principles (domain, application, infrastructure layers within each slice)\n- **Domain-Driven Design (DDD)** within each slice (entities, value objects, aggregates, domain events)\n\n### Testing / TDD\n- **Backend:** xUnit + test project scaffolded and wired up (unit + integration test projects)\n- **Frontend:** Vitest + React Testing Library (unit), Playwright or Cypress (e2e)\n- All projects should be testable with a single simple command\n\n### UX / Design\n- **Storybook** configured for the React app (component isolation, visual testing)\n- Should support both light/dark themes if feasible\n\n### Developer Experience\n- `pnpm start` (or `npm start`) from the repo root starts the ENTIRE stack (Aspire AppHost)\n- `pnpm test` (or equivalent) runs all tests — frontend unit, backend unit, integration\n- Single-command startup is a hard requirement\n\n### Project Structure Goals\n- Monorepo-style layout (frontend + backend + aspire host in one repo)\n- Clear separation of concerns; easy to add new vertical slices\n- README with setup instructions and architecture overview\n\n---\n\n## Backlog Requirements\n\nPlease produce a `backlog.json` file at the repo root with well-formed items. Each item must have:\n- `id` (e.g. \"PROJ-001\")\n- `title`\n- `type` (\"epic\" | \"story\" | \"task\" | \"spike\")\n- `priority` (\"critical\" | \"high\" | \"medium\" | \"low\")\n- `size` (story points: 1, 2, 3, 5, 8, 13)\n- `status` (\"ready\" | \"draft\" | \"blocked\")\n- `acceptanceCriteria` (array of strings)\n- `dependencies` (array of item ids, or empty)\n- `tags` (array of strings)\n- `description` (short paragraph)\n\nBreak epics down into stories/tasks small enough to be completed in a single sprint (≤8 points). Spike items for unknowns. Order by priority (critical first). Ensure all stories have clear, testable acceptance criteria. Identify and flag any blockers or dependencies explicitly.",
+      "outputPreview": "Starting the workflow — no prior state completed. Kicking off ingestion of raw requirements."
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      "backlog.json"
+    ],
+    "keyFindings": [
+      "Raw requirements ingested: React + ASP.NET Core + .NET Aspire + Vertical Slice Architecture + DDD + TDD + Storybook",
+      "Tech stack: React/TypeScript frontend, ASP.NET Core C# backend, .NET Aspire orchestration, pnpm package manager",
+      "Architecture: Vertical Slice Architecture (no MediatR), Clean Architecture within slices, DDD (entities, value objects, aggregates, domain events)",
+      "Testing: xUnit (backend unit+integration), Vitest + React Testing Library (frontend unit), Playwright/Cypress (e2e)",
+      "DX requirements: single `pnpm start` command starts entire stack via Aspire AppHost, `pnpm test` runs all tests",
+      "UX: Storybook for component isolation and visual testing, light/dark theme support",
+      "Monorepo layout: frontend + backend + aspire host in one repo",
+      "backlog.json must be written with id, title, type, priority, size, status, acceptanceCriteria, dependencies, tags, description fields",
+      "Items ordered by priority (critical first), all stories ≤8 points, dependencies explicitly flagged"
+    ],
+    "pendingTasks": [
+      "Review backlog for health: sizing, acceptance criteria completeness, dependencies, priority order",
+      "Ensure all epics are broken into sprint-sized stories (≤8 pts)",
+      "Verify no circular dependencies",
+      "Confirm all stories have testable acceptance criteria",
+      "Summarize backlog state for sprint planning readiness"
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "ingestion->ingestion": 1
+  },
+  "totalTokens": 0,
+  "totalElapsed": 892,
+  "status": "running"
+}

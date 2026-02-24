@@ -1,0 +1,92 @@
+{
+  "name": "Feature Full",
+  "description": "Full feature delivery: scope to MVP, specialist pre-implementation review panel, adversarial post-implementation checks, and documentation",
+  "initial": "scope-review",
+  "states": {
+    "scope-review": {
+      "description": "MVP scoping gate — evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
+      "agent": "scope-reviewer",
+      "next": ["planning"],
+      "requires_approval": false
+    },
+    "planning": {
+      "description": "Architecture planning and task breakdown — plan against the scoped increment defined by scope-review, not the full original request",
+      "agent": "planner",
+      "next": ["architecture-review", "scope-review"],
+      "requires_approval": false
+    },
+    "architecture-review": {
+      "description": "Architecture and design review — SOLID principles, coupling, cohesion, API contracts, scalability",
+      "agent": "architect",
+      "next": ["security-review", "planning"],
+      "requires_approval": false
+    },
+    "security-review": {
+      "description": "Pre-implementation security review — threat modeling, attack surface analysis, auth flows, data exposure risks",
+      "agent": "security-auditor",
+      "next": ["performance-review", "planning"],
+      "requires_approval": false
+    },
+    "performance-review": {
+      "description": "Pre-implementation performance review — algorithmic complexity, DB query patterns, caching needs, bottleneck predictions",
+      "agent": "performance-engineer",
+      "next": ["ux-review", "planning"],
+      "requires_approval": false
+    },
+    "ux-review": {
+      "description": "UX design review — user flows, component specs, accessibility, design system adherence",
+      "agent": "ux-designer",
+      "extra_skills": ["accessibility"],
+      "next": ["devops-review", "planning"],
+      "requires_approval": false
+    },
+    "devops-review": {
+      "description": "Operational readiness review — CI/CD, deployment strategy, secrets management, observability, migration safety",
+      "agent": "devops-engineer",
+      "next": ["plan-approval", "planning"],
+      "requires_approval": false
+    },
+    "plan-approval": {
+      "description": "Final plan gate — synthesize all specialist feedback, challenge assumptions, approve or block",
+      "agent": "plan-reviewer",
+      "next": ["implementation", "planning"],
+      "requires_approval": true
+    },
+    "implementation": {
+      "description": "Code generation and implementation — implement only the scoped increment, all specialist review feedback must be addressed",
+      "agent": "builder",
+      "next": ["red-team-assessment", "planning"],
+      "requires_approval": false
+    },
+    "red-team-assessment": {
+      "description": "Adversarial post-implementation review — attack the code, hunt edge cases, probe failure modes",
+      "agent": "red-team",
+      "next": ["performance-validation", "implementation"],
+      "requires_approval": false
+    },
+    "performance-validation": {
+      "description": "Post-implementation performance validation — benchmark, profile, verify against pre-implementation predictions",
+      "agent": "performance-engineer",
+      "next": ["verification", "implementation"],
+      "requires_approval": false
+    },
+    "verification": {
+      "description": "Final QA — run tests, check coverage, validate against acceptance criteria",
+      "agent": "reviewer",
+      "next": ["commit", "implementation"],
+      "requires_approval": false
+    },
+    "commit": {
+      "description": "Stage changes and create a conventional commit",
+      "agent": "git-ops",
+      "next": ["done", "implementation"],
+      "requires_approval": true
+    },
+    "done": {
+      "description": "Increment complete — generate changelog entry, update docs, and note deferred increments",
+      "agent": "tech-writer",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}

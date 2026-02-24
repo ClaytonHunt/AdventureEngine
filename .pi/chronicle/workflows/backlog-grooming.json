@@ -1,0 +1,25 @@
+{
+  "name": "Backlog Grooming",
+  "description": "Ingest raw requirements or groom the existing backlog — decompose oversized items, write acceptance criteria, assign sizes, and establish priority order",
+  "initial": "ingestion",
+  "states": {
+    "ingestion": {
+      "description": "Take raw requirements and decompose them into properly-sized, prioritized backlog items — write all new items to backlog.json",
+      "agent": "backlog-manager",
+      "next": ["review"],
+      "requires_approval": false
+    },
+    "review": {
+      "description": "Review the updated backlog for health — check sizing, acceptance criteria completeness, dependencies, and priority order",
+      "agent": "backlog-manager",
+      "next": ["done", "ingestion"],
+      "requires_approval": false
+    },
+    "done": {
+      "description": "Grooming complete — summarize the backlog state and note what is ready for sprint planning",
+      "agent": "documenter",
+      "next": [],
+      "requires_approval": false
+    }
+  }
+}
