@@ -56,6 +56,7 @@ launchSettings.json
 .vscode/
 !.vscode/extensions.json
 !.vscode/launch.json.template
+!.vscode/settings.json
 
 # Playwright
 playwright-report/
