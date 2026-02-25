@@ -12,10 +12,15 @@
     "test": "pnpm --filter web test",
     "test:e2e": "echo 'E2E tests: add in Sprint 3'",
     "test:api": "dotnet test AdventureEngine.slnx --no-build -c Release --logger trx --results-directory ./TestResults",
-    "storybook": "echo 'Storybook: add in Sprint 3'",
+    "storybook": "pnpm --filter web storybook",
     "build": "pnpm --filter web build"
   },
   "devDependencies": {
     "yaml": "2.8.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "minimatch": "^10.2.1"
+    }
   }
 }
