@@ -19,13 +19,35 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddOpenApi();
 }
 
-// TODO item-015 (Sprint 4): Add CORS policy here.
-// NEVER use AllowAnyOrigin() in production.
-// builder.Services.AddCors(options =>
-//     options.AddPolicy("ReactDevServer", policy =>
-//         policy.WithOrigins("http://localhost:5173")
-//               .AllowAnyMethod()
-//               .AllowAnyHeader()));
+// item-015: CORS policy sourced from configuration (env vars / launchSettings.json).
+// In dev, AllowedOrigins__0=http://localhost:5173 is set in launchSettings.json.
+// In production, inject AllowedOrigins__0, AllowedOrigins__1, … via environment variables.
+// NEVER hard-code origins here or use AllowAnyOrigin().
+var allowedOrigins = builder.Configuration
+    .GetSection("AllowedOrigins").Get<string[]>() ?? [];
+
+if (allowedOrigins.Length == 0)
+{
+    // Log a startup warning so developers notice missing CORS config immediately.
+    // Use Console here because the ILogger<Program> DI container is not yet built.
+    Console.WriteLine("[WARN] CORS: AllowedOrigins is empty — cross-origin requests from " +
+                      "the React dev server will be blocked. Set AllowedOrigins__0 in " +
+                      "launchSettings.json or environment variables.");
+}
+
+builder.Services.AddCors(options =>
+    options.AddPolicy("FrontendOrigins", policy =>
+    {
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+            // DO NOT add .AllowCredentials() — the authentication story has not been
+            // implemented. Adding this without a strict origin list enables
+            // CSRF-equivalent attacks. Revisit when auth (item-XXX) is scoped.
+        }
+    }));
 
 builder.Services.ConfigureHttpJsonOptions(opts =>
     opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
@@ -49,6 +71,10 @@ var app = builder.Build();
 
 // Redirect HTTP → HTTPS before any response is generated.
 app.UseHttpsRedirection();
+
+// item-015: Apply CORS policy before response compression to ensure CORS headers
+// are present on all responses, including compressed ones.
+app.UseCors("FrontendOrigins");
 
 // SECURITY NOTE: Response compression + HTTPS is subject to the BREACH attack (CVE-2013-3587)
 // when secrets are reflected in compressed responses alongside user-controlled input.
