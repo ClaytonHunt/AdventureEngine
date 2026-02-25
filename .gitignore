@@ -4,6 +4,10 @@ dist/
 build/
 .turbo/
 
+# Storybook
+storybook-static/
+debug-storybook.log
+
 # pnpm
 .pnpm-store/
 
