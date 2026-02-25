@@ -23,8 +23,10 @@ if (builder.Environment.IsDevelopment())
 // In dev, AllowedOrigins__0=http://localhost:5173 is set in launchSettings.json.
 // In production, inject AllowedOrigins__0, AllowedOrigins__1, … via environment variables.
 // NEVER hard-code origins here or use AllowAnyOrigin().
-var allowedOrigins = builder.Configuration
-    .GetSection("AllowedOrigins").Get<string[]>() ?? [];
+var allowedOrigins = (builder.Configuration
+    .GetSection("AllowedOrigins").Get<string[]>() ?? [])
+    .Where(o => !string.IsNullOrWhiteSpace(o))
+    .ToArray();
 
 if (allowedOrigins.Length == 0)
 {

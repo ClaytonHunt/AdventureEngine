@@ -17,6 +17,10 @@ var api = builder.AddProject<Projects.AdventureEngine_Api>("api");
 // In production the web app is served from a CDN or static host — not via Aspire.
 // AddViteApp uses Aspire.Hosting.JavaScript 13.1.1 (the .NET 10-era replacement for
 // the deprecated Aspire.Hosting.NodeJs package).
+//
+// Note: DistributedApplicationBuilder reads DOTNET_ENVIRONMENT (not ASPNETCORE_ENVIRONMENT).
+// Aspire's launchSettings.json sets both automatically. For manual `dotnet run` invocations
+// outside of Aspire, set DOTNET_ENVIRONMENT=Development to register the web resource.
 if (builder.Environment.IsDevelopment())
 {
     builder.AddViteApp("web", "../../apps/web")

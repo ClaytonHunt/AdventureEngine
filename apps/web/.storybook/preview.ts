@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/react-vite'
+import type { Preview } from '@storybook/react'
 
 // Import design tokens so CSS custom properties resolve in all stories.
 import '@/styles/tokens.css'
