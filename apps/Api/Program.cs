@@ -1,4 +1,8 @@
+using System.IO.Compression;
+using System.Text.Json;
+using AdventureEngine.Api.Features.HealthCheck;
 using AdventureEngine.ServiceDefaults;
+using Microsoft.AspNetCore.ResponseCompression;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,16 +27,40 @@ if (builder.Environment.IsDevelopment())
 //               .AllowAnyMethod()
 //               .AllowAnyHeader()));
 
+builder.Services.ConfigureHttpJsonOptions(opts =>
+    opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.EnableForHttps = false; // SECURITY: BREACH attack mitigation (CVE-2013-3587)
+    opts.Providers.Add<BrotliCompressionProvider>();
+    opts.Providers.Add<GzipCompressionProvider>();
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        ["application/json", "text/plain"]);
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(opts =>
+    opts.Level = CompressionLevel.Fastest);
+
+builder.Services.Configure<GzipCompressionProviderOptions>(opts =>
+    opts.Level = CompressionLevel.Fastest);
+
 var app = builder.Build();
 
 // Redirect HTTP → HTTPS before any response is generated.
 app.UseHttpsRedirection();
 
-// TODO Sprint 3: app.UseResponseCompression(); — add here, before endpoint mapping.
+// SECURITY NOTE: Response compression + HTTPS is subject to the BREACH attack (CVE-2013-3587)
+// when secrets are reflected in compressed responses alongside user-controlled input.
+// EnableForHttps is false — compression is disabled over HTTPS to mitigate this risk.
+// Review before enabling compression on authenticated endpoints.
+// See: https://breachattack.com/
+app.UseResponseCompression();
 
 // Health check endpoints: /health/live and /health/ready
 // Guarded by IsDevelopment() inside ServiceDefaults.MapDefaultEndpoints().
 app.MapDefaultEndpoints();
+app.MapHealthCheckEndpoint();
 
 if (app.Environment.IsDevelopment())
 {
@@ -49,3 +77,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Required for WebApplicationFactory<Program> in integration tests
+public partial class Program { }

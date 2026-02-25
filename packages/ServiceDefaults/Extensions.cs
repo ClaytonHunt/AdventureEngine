@@ -77,7 +77,11 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing
-                    .AddAspNetCoreInstrumentation()
+                    .AddAspNetCoreInstrumentation(opts =>
+                    {
+                        // Exclude health check endpoint from traces — load balancer probes generate noise
+                        opts.Filter = ctx => !ctx.Request.Path.StartsWithSegments("/health");
+                    })
                     .AddHttpClientInstrumentation();
             });
 
