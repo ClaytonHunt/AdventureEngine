@@ -102,6 +102,8 @@ builder.Services.AddCors(options =>
 builder.Services.ConfigureHttpJsonOptions(opts =>
     opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
+builder.Services.AddProblemDetails();
+
 builder.Services.AddResponseCompression(opts =>
 {
     opts.EnableForHttps = false; // SECURITY: BREACH attack mitigation (CVE-2013-3587)
@@ -139,8 +141,12 @@ app.MapDefaultEndpoints();
 app.MapHealthCheckEndpoint();
 
 // Test-only endpoint used to assert CORS behavior remains independent from authorization.
-app.MapGet("/secure-test", () => Results.Unauthorized())
-    .WithName("SecureTest");
+// Do not expose outside non-production environments.
+if (!app.Environment.IsProduction())
+{
+    app.MapGet("/secure-test", () => Results.Unauthorized())
+        .WithName("SecureTest");
+}
 
 if (app.Environment.IsDevelopment())
 {
