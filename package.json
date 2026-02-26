@@ -21,9 +21,12 @@
     "verify:audit": "pnpm audit --audit-level high",
     "verify:log-redaction": "node scripts/verify-log-redaction.mjs",
     "verify:apphost": "node scripts/verify-apphost-port-smoke.mjs",
-    "verify:storybook": "node scripts/verify-storybook-sprint4.mjs"
+    "verify:storybook": "node scripts/verify-storybook-sprint4.mjs",
+    "verify:perf-budgets": "node scripts/verify-perf-budgets.mjs",
+    "measure:ci-perf": "node scripts/measure-ci-perf.mjs"
   },
   "devDependencies": {
+    "ajv": "8.17.1",
     "yaml": "2.8.0"
   },
   "pnpm": {

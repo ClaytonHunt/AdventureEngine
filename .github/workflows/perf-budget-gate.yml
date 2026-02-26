@@ -1,0 +1,45 @@
+name: perf-budget-gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  perf-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Validate perf budgets schema
+        run: pnpm run verify:perf-budgets
+
+      - name: Measure CI performance and enforce budgets
+        run: pnpm run measure:ci-perf
+
+      - name: Upload performance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-budget-artifacts
+          path: |
+            .pi/chronicle/artifacts/tmp/perf/perf-env.json
+            .pi/chronicle/artifacts/tmp/perf/perf-raw-samples.json
+            .pi/chronicle/artifacts/tmp/perf/perf-aggregate.json
+          if-no-files-found: warn
+          retention-days: 14

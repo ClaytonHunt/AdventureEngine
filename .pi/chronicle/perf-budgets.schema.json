@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adventureengine.local/schemas/perf-budgets.schema.json",
+  "title": "CI performance budgets",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "budgets"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["apiStartupMs", "storybookStartupMs"],
+      "properties": {
+        "apiStartupMs": { "$ref": "#/$defs/metricBudget" },
+        "storybookStartupMs": { "$ref": "#/$defs/metricBudget" }
+      }
+    }
+  },
+  "$defs": {
+    "metricBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["warmupRuns", "sampleRuns", "maxMedianMs", "maxP90Ms", "maxStdDevMs"],
+      "properties": {
+        "warmupRuns": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "sampleRuns": { "type": "integer", "minimum": 3, "maximum": 20 },
+        "maxMedianMs": { "type": "integer", "minimum": 1 },
+        "maxP90Ms": { "type": "integer", "minimum": 1 },
+        "maxStdDevMs": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

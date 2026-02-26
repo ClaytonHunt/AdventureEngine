@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
+using AdventureEngine.Api.Features.Cors;
 using AdventureEngine.Api.Features.HealthCheck;
 using AdventureEngine.ServiceDefaults;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -19,90 +20,13 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddOpenApi();
 }
 
-// item-015: CORS policy sourced from configuration (env vars / launchSettings.json).
-// In dev, AllowedOrigins__0=http://localhost:5173 is set in launchSettings.json.
-// In production, inject AllowedOrigins__0, AllowedOrigins__1, … via environment variables.
-// NEVER hard-code origins here or use AllowAnyOrigin().
-var configuredOrigins = builder.Configuration
-    .GetSection("AllowedOrigins")
-    .Get<string[]>() ?? [];
-
-var validOrigins = new List<string>();
-var invalidOrigins = new List<string>();
-
-foreach (var raw in configuredOrigins)
-{
-    if (string.IsNullOrWhiteSpace(raw))
-    {
-        invalidOrigins.Add("<empty>");
-        continue;
-    }
-
-    var trimmed = raw.Trim();
-
-    if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) ||
-        (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
-        string.IsNullOrWhiteSpace(uri.Host) ||
-        !string.IsNullOrEmpty(uri.PathAndQuery.Trim('/')) ||
-        !string.IsNullOrEmpty(uri.Fragment))
-    {
-        invalidOrigins.Add(trimmed);
-        continue;
-    }
-
-    validOrigins.Add(uri.GetLeftPart(UriPartial.Authority));
-}
-
-var allowedOrigins = validOrigins
-    .Distinct(StringComparer.OrdinalIgnoreCase)
-    .ToArray();
-
-if (invalidOrigins.Count > 0)
-{
-    var message =
-        $"CORS: Invalid AllowedOrigins entries: {string.Join(", ", invalidOrigins)}. " +
-        "Each origin must be an absolute http/https origin with host only (no path/query/fragment).";
-
-    if (builder.Environment.IsProduction())
-    {
-        throw new InvalidOperationException(message);
-    }
-
-    Console.WriteLine($"[WARN] {message}");
-}
-
-if (allowedOrigins.Length == 0)
-{
-    var message =
-        "CORS: AllowedOrigins is empty after validation. Configure AllowedOrigins__0, " +
-        "AllowedOrigins__1, etc. with absolute http/https origins.";
-
-    if (builder.Environment.IsProduction())
-    {
-        throw new InvalidOperationException(message);
-    }
-
-    Console.WriteLine($"[WARN] {message}");
-}
-
-builder.Services.AddCors(options =>
-    options.AddPolicy("FrontendOrigins", policy =>
-    {
-        if (allowedOrigins.Length > 0)
-        {
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-            // DO NOT add .AllowCredentials() — the authentication story has not been
-            // implemented. Adding this without a strict origin list enables
-            // CSRF-equivalent attacks. Revisit when auth (item-XXX) is scoped.
-        }
-    }));
+builder.Services.AddFrontendCors(builder.Configuration, builder.Environment);
 
 builder.Services.ConfigureHttpJsonOptions(opts =>
     opts.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 builder.Services.AddProblemDetails();
+builder.Services.AddSingleton<IHealthHandler, DefaultHealthHandler>();
 
 builder.Services.AddResponseCompression(opts =>
 {
@@ -120,6 +44,9 @@ builder.Services.Configure<GzipCompressionProviderOptions>(opts =>
     opts.Level = CompressionLevel.Fastest);
 
 var app = builder.Build();
+
+app.Services.GetRequiredService<ICorsStartupValidator>()
+    .Validate(app.Logger);
 
 // Redirect HTTP → HTTPS before any response is generated.
 app.UseHttpsRedirection();

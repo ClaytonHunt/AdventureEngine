@@ -3,11 +3,12 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using AdventureEngine.Api.Features.HealthCheck;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AdventureEngine.Api.Tests.Features.HealthCheck;
 
 public class HealthCheckEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>, IDisposable
+    : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
     public async Task GetHealth_Returns200Ok_AndHealthyBody()
@@ -30,6 +31,45 @@ public class HealthCheckEndpointTests(WebApplicationFactory<Program> factory)
         var response = await client.GetAsync("/health");
 
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task GetHealth_ReturnsNoCacheHeaders()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/health");
+
+        Assert.Equal("no-store, no-cache, max-age=0", response.Headers.CacheControl?.ToString());
+        IEnumerable<string>? pragmaValues = null;
+        if (response.Headers.TryGetValues("Pragma", out var responsePragmaValues))
+        {
+            pragmaValues = responsePragmaValues;
+        }
+        else if (response.Content.Headers.TryGetValues("Pragma", out var contentPragmaValues))
+        {
+            pragmaValues = contentPragmaValues;
+        }
+
+        if (pragmaValues is not null)
+        {
+            Assert.Contains("no-cache", pragmaValues);
+        }
+
+        IEnumerable<string>? expiresValues = null;
+        if (response.Headers.TryGetValues("Expires", out var responseExpiresValues))
+        {
+            expiresValues = responseExpiresValues;
+        }
+        else if (response.Content.Headers.TryGetValues("Expires", out var contentExpiresValues))
+        {
+            expiresValues = contentExpiresValues;
+        }
+
+        if (expiresValues is not null)
+        {
+            Assert.Contains("0", expiresValues);
+        }
     }
 
     [Fact]
@@ -74,9 +114,13 @@ public class HealthCheckEndpointTests(WebApplicationFactory<Program> factory)
     [Fact]
     public async Task GetHealth_WhenHandlerThrows_Returns503AndSanitizedBody()
     {
-        var client = factory.CreateClient();
+        using var customFactory = factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.AddSingleton<IHealthHandler, ThrowingHealthHandler>();
+            }));
 
-        HealthCheckEndpoint.HandlerOverride = () => throw new InvalidOperationException("sensitive-stack-detail");
+        var client = customFactory.CreateClient();
 
         var response = await client.GetAsync("/health");
         var body = await response.Content.ReadAsStringAsync();
@@ -96,11 +140,6 @@ public class HealthCheckEndpointTests(WebApplicationFactory<Program> factory)
         var unhealthy = new HealthResponse("unhealthy");
 
         Assert.Equal(healthy.GetType(), unhealthy.GetType());
-    }
-
-    public void Dispose()
-    {
-        HealthCheckEndpoint.ResetHandlerOverride();
     }
 
     private static string? GetJsonSchemaReference(JsonElement response)

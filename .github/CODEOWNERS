@@ -1,0 +1,8 @@
+# Protect CI perf governance assets
+/.pi/chronicle/perf-budgets.json @team-leads
+/.pi/chronicle/perf-budgets.schema.json @team-leads
+/scripts/measure-ci-perf.mjs @team-leads
+/scripts/verify-perf-budgets.mjs @team-leads
+/.github/workflows/perf-budget-gate.yml @team-leads
+/package.json @team-leads
+/pnpm-lock.yaml @team-leads

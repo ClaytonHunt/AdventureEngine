@@ -1,0 +1,20 @@
+{
+  "$schema": "./perf-budgets.schema.json",
+  "version": 1,
+  "budgets": {
+    "apiStartupMs": {
+      "warmupRuns": 1,
+      "sampleRuns": 5,
+      "maxMedianMs": 8000,
+      "maxP90Ms": 12000,
+      "maxStdDevMs": 2500
+    },
+    "storybookStartupMs": {
+      "warmupRuns": 1,
+      "sampleRuns": 5,
+      "maxMedianMs": 30000,
+      "maxP90Ms": 45000,
+      "maxStdDevMs": 6000
+    }
+  }
+}
