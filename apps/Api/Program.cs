@@ -23,18 +23,66 @@ if (builder.Environment.IsDevelopment())
 // In dev, AllowedOrigins__0=http://localhost:5173 is set in launchSettings.json.
 // In production, inject AllowedOrigins__0, AllowedOrigins__1, … via environment variables.
 // NEVER hard-code origins here or use AllowAnyOrigin().
-var allowedOrigins = (builder.Configuration
-    .GetSection("AllowedOrigins").Get<string[]>() ?? [])
-    .Where(o => !string.IsNullOrWhiteSpace(o))
+var configuredOrigins = builder.Configuration
+    .GetSection("AllowedOrigins")
+    .Get<string[]>() ?? [];
+
+var validOrigins = new List<string>();
+var invalidOrigins = new List<string>();
+
+foreach (var raw in configuredOrigins)
+{
+    if (string.IsNullOrWhiteSpace(raw))
+    {
+        invalidOrigins.Add("<empty>");
+        continue;
+    }
+
+    var trimmed = raw.Trim();
+
+    if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) ||
+        (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+        string.IsNullOrWhiteSpace(uri.Host) ||
+        !string.IsNullOrEmpty(uri.PathAndQuery.Trim('/')) ||
+        !string.IsNullOrEmpty(uri.Fragment))
+    {
+        invalidOrigins.Add(trimmed);
+        continue;
+    }
+
+    validOrigins.Add(uri.GetLeftPart(UriPartial.Authority));
+}
+
+var allowedOrigins = validOrigins
+    .Distinct(StringComparer.OrdinalIgnoreCase)
     .ToArray();
+
+if (invalidOrigins.Count > 0)
+{
+    var message =
+        $"CORS: Invalid AllowedOrigins entries: {string.Join(", ", invalidOrigins)}. " +
+        "Each origin must be an absolute http/https origin with host only (no path/query/fragment).";
+
+    if (builder.Environment.IsProduction())
+    {
+        throw new InvalidOperationException(message);
+    }
+
+    Console.WriteLine($"[WARN] {message}");
+}
 
 if (allowedOrigins.Length == 0)
 {
-    // Log a startup warning so developers notice missing CORS config immediately.
-    // Use Console here because the ILogger<Program> DI container is not yet built.
-    Console.WriteLine("[WARN] CORS: AllowedOrigins is empty — cross-origin requests from " +
-                      "the React dev server will be blocked. Set AllowedOrigins__0 in " +
-                      "launchSettings.json or environment variables.");
+    var message =
+        "CORS: AllowedOrigins is empty after validation. Configure AllowedOrigins__0, " +
+        "AllowedOrigins__1, etc. with absolute http/https origins.";
+
+    if (builder.Environment.IsProduction())
+    {
+        throw new InvalidOperationException(message);
+    }
+
+    Console.WriteLine($"[WARN] {message}");
 }
 
 builder.Services.AddCors(options =>
@@ -89,6 +137,10 @@ app.UseResponseCompression();
 // Guarded by IsDevelopment() inside ServiceDefaults.MapDefaultEndpoints().
 app.MapDefaultEndpoints();
 app.MapHealthCheckEndpoint();
+
+// Test-only endpoint used to assert CORS behavior remains independent from authorization.
+app.MapGet("/secure-test", () => Results.Unauthorized())
+    .WithName("SecureTest");
 
 if (app.Environment.IsDevelopment())
 {

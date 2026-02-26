@@ -100,16 +100,13 @@ interface AgentDef {
 /** A single workflow state definition */
 interface WorkflowState {
 	description: string;
-	// Agent-based (v2): reference a pre-defined agent by name
 	agent?: string;
-	// Inline persona (v1, backward-compatible fallback)
 	persona?: string;
-	tools?: string;       // only used when persona is inline (agent has its own tools)
-	// Skills to layer on top of the agent's own skills
+	tools?: string;
 	extra_skills?: string[];
 	next: string[];
-	requires_approval?: boolean;
-	// Hard cap on how long this state may run (default: 15 min)
+	requires_approval?: boolean;   // pre-run human gate (fires before agent)
+	approval_mode?: "pre" | "post"; // "post" = run agent first, gate on verdict
 	timeout_minutes?: number;
 }
 
@@ -123,6 +120,7 @@ interface WorkflowDef {
 interface StateRecord {
 	state: string;
 	agentName: string;    // which agent ran this state
+	modelUsed?: string;   // provider/model used for this run
 	startedAt: number;
 	completedAt?: number;
 	summary: string;
@@ -483,17 +481,26 @@ function loadWorkflows(workflowDir: string): WorkflowDef[] {
 
 // ── Context Block Builder ─────────────────────────────────────────────────────
 
+function sanitizeHandoverText(text: string): string {
+	return text
+		.replace(/reply exactly:\s*\*\*proceed with tool execution now\.\*\*/ig, "[removed repetitive approval-loop phrase]")
+		.replace(/please send(?: exactly)?:?\s*\*\*"?proceed with tool execution now\.?"?\*\*/ig, "[removed repetitive approval-loop phrase]")
+		.replace(/to continue properly,\s*send:?\s*\*\*proceed with tool execution now\.\*\*/ig, "[removed repetitive approval-loop phrase]")
+		.trim();
+}
+
 function buildContextBlock(ledger: Ledger): string {
 	const lines: string[] = [];
 
 	if (ledger.history.length > 0) {
 		lines.push("## Workflow History");
-		for (const h of ledger.history) {
+		const recentHistory = ledger.history.slice(-12); // prevent runaway context anchoring
+		for (const h of recentHistory) {
 			const elapsed = h.elapsed ? ` (${fmtElapsed(h.elapsed)})` : "";
 			const agent = h.agentName ? ` [${displayName(h.agentName)}]` : "";
 			lines.push(`### State: ${displayName(h.state)}${agent}${elapsed}`);
-			lines.push(`**Task:** ${h.taskGiven}`);
-			lines.push(`**Summary:** ${h.summary}`);
+			lines.push(`**Task:** ${sanitizeHandoverText(h.taskGiven || "")}`);
+			lines.push(`**Summary:** ${sanitizeHandoverText(h.summary || "")}`);
 			lines.push("");
 		}
 	}
@@ -525,6 +532,49 @@ function buildContextBlock(ledger: Ledger): string {
 	return lines.join("\n");
 }
 
+// ── Verdict Detection ─────────────────────────────────────────────────────────
+// Detects APPROVE / BLOCK verdicts from reviewer agents.
+// Used by approval_mode:"post" states (e.g. plan-approval) to decide whether
+// to show a human confirmation dialog or surface a block for the supervisor.
+//
+// IMPORTANT: avoid global keyword scans — they cause false BLOCKs when prompts
+// include both words (e.g. instructions or examples). Prefer a dedicated
+// `Verdict: APPROVE|BLOCK` line and only then use conservative fallbacks.
+
+function isExecutionApprovalLoop(output: string): boolean {
+	return /proceed with tool execution now|explicit execution approval|cannot provide that truthfully without running commands|please send exactly\s*:?\s*\*\*"?proceed with tool execution now/i.test(output);
+}
+
+function detectVerdict(output: string): { verdict: "approve" | "block"; source: string } {
+	const text = output.replace(/\r\n/g, "\n");
+
+	// 1) Primary parser: explicit Verdict line (last one wins)
+	// Accepts markdown variants like:
+	//   Verdict: APPROVE
+	//   **Verdict:** BLOCK
+	//   - Verdict: approve
+	const verdictLineRe = /^\s{0,3}(?:[-*]\s*)?(?:\*\*)?\s*verdict\s*(?:\*\*)?\s*:\s*(?:\*\*)?\s*(approve|block)\b.*$/gim;
+	let m: RegExpExecArray | null;
+	let last: "approve" | "block" | null = null;
+	while ((m = verdictLineRe.exec(text)) !== null) {
+		last = m[1].toLowerCase() as "approve" | "block";
+	}
+	if (last) return { verdict: last, source: "verdict-line" };
+
+	// 2) Secondary parser: `### Verdict` section only (not whole document)
+	const verdictSection = text.match(/(^|\n)\s{0,3}#{1,6}\s*verdict\b[\s\S]*?(?=\n\s{0,3}#{1,6}\s+\S|\s*$)/i)?.[0] || "";
+	if (verdictSection) {
+		const hasApprove = /✅|\bapprove\b|\bapproved\b|\bready to (ship|implement|proceed)\b/i.test(verdictSection);
+		const hasBlock = /⛔|🔴|\bblock\b|\bdo not ship\b|\bdo not proceed\b|\bcorrections required\b/i.test(verdictSection);
+		if (hasApprove && !hasBlock) return { verdict: "approve", source: "verdict-section" };
+		if (hasBlock && !hasApprove) return { verdict: "block", source: "verdict-section" };
+		if (hasApprove && hasBlock) return { verdict: "block", source: "verdict-section-ambiguous" };
+	}
+
+	// 3) Last-resort fallback: conservative block
+	return { verdict: "block", source: "fallback" };
+}
+
 // ── Sub-Agent Spawner ─────────────────────────────────────────────────────────
 
 interface SpawnResult {
@@ -541,6 +591,13 @@ interface ResolvedStateAgent {
 	skillPaths: string[];
 	modelOverride?: string;
 	agentName: string;
+	cwd: string;              // project root — used to locate chronicle-ask.ts
+}
+
+interface AgentQuestion {
+	question: string;
+	options: string[];
+	allowFreeText: boolean;
 }
 
 /**
@@ -600,6 +657,7 @@ function resolveStateAgent(
 				skillPaths,
 				modelOverride: agentDef.model,
 				agentName: agentDef.name,
+				cwd,
 			};
 		}
 		// Agent name given but file not found — warn and fall through with defaults
@@ -610,6 +668,7 @@ function resolveStateAgent(
 			workflowContext,
 			skillPaths,
 			agentName: stateDef.agent,
+			cwd,
 		};
 	}
 
@@ -625,6 +684,7 @@ function resolveStateAgent(
 		workflowContext,
 		skillPaths: resolveSkillPaths(allSkillNames, cwd),
 		agentName: "(inline)",
+		cwd,
 	};
 }
 
@@ -637,9 +697,8 @@ function spawnStateAgent(
 	timeoutMs: number,
 	onProgress: (text: string) => void,
 	onSpawn: (proc: ReturnType<typeof spawn>) => void,
+	onQuestion: (q: AgentQuestion) => Promise<string>,
 ): Promise<SpawnResult> {
-	const agentSessionFile = join(sessDir, `state-${ledgerId}-${stateKey}.json`);
-
 	// Write the workflow context (task + history + project settings) to a file.
 	//
 	// WHY FILE: pi --help says --append-system-prompt accepts "text or file
@@ -657,10 +716,12 @@ function spawnStateAgent(
 
 	const effectiveModel = resolved.modelOverride || model;
 
+	const chronicleAskExt = join(resolved.cwd, "extensions", "chronicle-ask.ts");
 	const args: string[] = [
 		"--mode", "json",
 		"-p",
 		"--no-extensions",
+		"-e", chronicleAskExt,      // ask_supervisor tool for this agent
 		"--model", effectiveModel,
 		"--tools", resolved.tools,
 		"--thinking", "off",
@@ -668,10 +729,12 @@ function spawnStateAgent(
 		...(resolved.agentPersona ? ["--system-prompt", resolved.agentPersona] : []),
 		// Workflow context (task, history, project settings) appended from file
 		"--append-system-prompt", contextFile,
-		"--session", agentSessionFile,
+		// Stateless per-run execution avoids stale conversational loops.
+		"--no-session",
 		...resolved.skillPaths.flatMap(p => ["--skill", p]),
-		// Task is embedded in the context file — short trigger only.
-		"Your task and full context are in your system prompt. Begin.",
+		// The task lives in the context file, but we still give a direct trigger
+		// in the user turn so the model doesn't stall waiting for extra approval.
+		"Execute the task now. You are explicitly authorized to run the required tools in this workspace. Do not ask for additional approval.",
 	];
 
 	// Spawn node directly with pi's cli.js — bypasses pi/pi.cmd and cmd.exe.
@@ -691,7 +754,13 @@ function spawnStateAgent(
 		const proc = spawn(nodeBin, [piCli, ...args], {
 			shell: false,
 			stdio: ["ignore", "pipe", "pipe"],
-			env: { ...process.env },
+			env: {
+				...process.env,
+				// Chronicle IPC — picked up by chronicle-ask.ts in the sub-agent
+				CHRONICLE_SESS_DIR:  sessDir,
+				CHRONICLE_LEDGER_ID: ledgerId,
+				CHRONICLE_STATE:     stateKey,
+			},
 		});
 
 		// Expose proc so /chronicle-kill can abort it
@@ -709,6 +778,8 @@ function spawnStateAgent(
 
 		let buffer = "";
 
+		let questionInFlight = false;   // serialize concurrent questions
+
 		proc.stdout!.setEncoding("utf-8");
 		proc.stdout!.on("data", (chunk: string) => {
 			buffer += chunk;
@@ -716,6 +787,33 @@ function spawnStateAgent(
 			buffer = lines.pop() || "";
 			for (const line of lines) {
 				if (!line.trim()) continue;
+
+				// ── Agent question IPC ──────────────────────────────────────────
+				// chronicle-ask.ts writes __CQ__:<base64-json> when an agent calls
+				// ask_supervisor().  We intercept it before JSON.parse so it never
+				// ends up in the catch block.
+				if (line.startsWith("__CQ__:") && !questionInFlight) {
+					questionInFlight = true;
+					const b64 = line.slice("__CQ__:".length);
+					let agentQuestion: AgentQuestion = { question: "", options: [], allowFreeText: true };
+					try {
+						agentQuestion = JSON.parse(Buffer.from(b64, "base64").toString("utf-8"));
+					} catch {}
+
+					// Fire async — the agent subprocess polls for the answer file
+					// while we await the user's selection.
+					(async () => {
+						try {
+							const answer = await onQuestion(agentQuestion);
+							const answerFile = join(sessDir, `answer-${ledgerId}-${stateKey}.json`);
+							writeFileSync(answerFile, JSON.stringify({ answer }), "utf-8");
+						} finally {
+							questionInFlight = false;
+						}
+					})().catch(() => { questionInFlight = false; });
+					continue;
+				}
+
 				try {
 					const event = JSON.parse(line);
 					if (event.type === "message_update") {
@@ -798,6 +896,15 @@ export default function (pi: ExtensionAPI) {
 	let gridCols = 4;
 	let currentAgentProc: ReturnType<typeof spawn> | null = null;
 	const DEFAULT_TIMEOUT_MINUTES = 15;
+	let lastSupervisorModel = "";
+
+	// ── Free-text answer channel ──────────────────────────────────────────────
+	// When an agent calls ask_supervisor() and the user picks "✏️ Other",
+	// we arm this callback.  pi.on("input") below intercepts the user's next
+	// typed message, resolves the promise with the raw text, and returns
+	// { action: "handled" } so the LLM never sees it.
+	let pendingAnswerCallback: ((text: string) => void) | null = null;
+	let pendingQuestion = "";   // displayed in the card while waiting
 
 	// Per-state card tracking — one entry per workflow state
 	interface StateCard {
@@ -806,6 +913,7 @@ export default function (pi: ExtensionAPI) {
 		status: "pending" | "running" | "done" | "error";
 		elapsed: number;
 		tokensUsed: number;
+		modelName: string;
 		lastLine: string;
 		startedAt: number;
 		timer?: ReturnType<typeof setInterval>;
@@ -821,6 +929,7 @@ export default function (pi: ExtensionAPI) {
 				status: "pending",
 				elapsed: 0,
 				tokensUsed: 0,
+				modelName: "",
 				lastLine: "",
 				startedAt: 0,
 			});
@@ -836,6 +945,7 @@ export default function (pi: ExtensionAPI) {
 			if (card) {
 				card.status   = (h.exitCode === 0 || h.exitCode === undefined) ? "done" : "error";
 				card.agentName  = h.agentName;
+				card.modelName  = h.modelUsed || "";
 				card.elapsed    = h.elapsed;
 				card.tokensUsed = h.tokensUsed;
 				card.lastLine   = h.outputPreview || "";
@@ -863,6 +973,10 @@ export default function (pi: ExtensionAPI) {
 		const stateName = displayName(card.stateName);
 		const nameStr = theme.fg("accent", theme.bold(trunc(stateName, w)));
 		const nameVisible = Math.min(stateName.length, w);
+
+		const modelText = card.modelName ? trunc(card.modelName, w - 1) : "";
+		const modelLine = modelText ? theme.fg("dim", modelText) : theme.fg("dim", "—");
+		const modelVisible = modelText ? modelText.length : 1;
 
 		const elapsedStr = card.elapsed > 0 ? ` ${fmtElapsed(card.elapsed)}` : "";
 		const tokStr = card.tokensUsed > 0 ? ` ${card.tokensUsed.toLocaleString()}t` : "";
@@ -896,6 +1010,7 @@ export default function (pi: ExtensionAPI) {
 		return [
 			bord(top),
 			border(" " + nameStr, 1 + nameVisible),
+			border(" " + modelLine, 1 + modelVisible),
 			border(" " + statusLine, 1 + statusVisible),
 			border(" " + agentLine, 1 + agentVisible),
 			border(" " + lastLine, 1 + lastVisible),
@@ -939,7 +1054,7 @@ export default function (pi: ExtensionAPI) {
 						const rowCards = cards.slice(i, i + cols);
 						const rendered = rowCards.map(c => renderCard(c, colWidth, theme));
 						while (rendered.length < cols) {
-							rendered.push(Array(6).fill(" ".repeat(colWidth)));
+							rendered.push(Array(7).fill(" ".repeat(colWidth)));
 						}
 						const cardHeight = rendered[0].length;
 						for (let line = 0; line < cardHeight; line++) {
@@ -975,6 +1090,46 @@ export default function (pi: ExtensionAPI) {
 		for (const card of stateCards.values()) {
 			if (card.timer) { clearInterval(card.timer); card.timer = undefined; }
 		}
+	}
+
+	function resolveSupervisorModel(ctx: any): string | null {
+		const m = ctx?.model?.provider && ctx?.model?.id
+			? `${ctx.model.provider}/${ctx.model.id}`
+			: "";
+		if (m) {
+			lastSupervisorModel = m;
+			return m;
+		}
+		return lastSupervisorModel || null;
+	}
+
+	// ── captureTypedAnswer ───────────────────────────────────────────────────
+	// Arms the pi.on("input") interceptor and waits for the user to type their
+	// answer in the normal Pi chat input.  The input event returns
+	// { action: "handled" } so the LLM never sees it.
+	// The card's lastLine shows the question while we wait.
+
+	function captureTypedAnswer(question: string, stateName: string): Promise<string> {
+		pendingQuestion = question;
+
+		// Show the question in the running card so the user knows what to answer
+		const card = stateCards.get(stateName);
+		if (card) {
+			card.lastLine = `⌨  ${question}`;
+			updateWidget();
+		}
+
+		// Notify the user clearly — this appears as a banner in the Pi TUI
+		if (widgetCtx) {
+			widgetCtx.ui.notify(
+				`💬 Agent question: "${question}"\n\nType your answer in the chat input and press Enter.\n(Your response goes to the agent — not to the AI supervisor)`,
+				"info",
+			);
+		}
+
+		return new Promise<string>((resolve) => {
+			pendingAnswerCallback = resolve;
+		});
 	}
 
 	// ── Tool: workflow_transition ───────────────────────────────────────────
@@ -1034,11 +1189,14 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			// Approval gate
-			if (targetStateDef.requires_approval && widgetCtx) {
-				const agentLabel = targetStateDef.agent
-					? ` (agent: ${targetStateDef.agent})`
-					: "";
+			// ── Pre-run approval gate ─────────────────────────────────────────
+			// Only fires when requires_approval:true AND approval_mode is "pre"
+			// (or unset — "pre" is the default).
+			// approval_mode:"post" states (e.g. plan-approval) skip this: the agent
+			// runs first and the gate fires only if the verdict is APPROVE.
+			const approvalMode = targetStateDef.approval_mode ?? "pre";
+			if (targetStateDef.requires_approval && approvalMode === "pre" && widgetCtx) {
+				const agentLabel = targetStateDef.agent ? ` (agent: ${targetStateDef.agent})` : "";
 				const choice = await widgetCtx.ui.select(
 					`Approve transition to "${displayName(to_state)}"${agentLabel}?`,
 					["Yes — proceed", "No — stay in current state"],
@@ -1053,6 +1211,16 @@ export default function (pi: ExtensionAPI) {
 				targetStateDef, to_state, ledger, task, allAgents, cwd,
 				projectSettings, projectSkillNames,
 			);
+			const model = resolveSupervisorModel(ctx);
+			if (!model) {
+				return {
+					content: [{
+						type: "text",
+						text: "Cannot resolve supervisor model for sub-agent spawn. Set/select a model for the main session first.",
+					}],
+				};
+			}
+			const runModel = resolved.modelOverride || model;
 
 			// Stop the previous card's timer.
 			// Do NOT force its status to "done" — it already reflects what actually
@@ -1072,6 +1240,7 @@ export default function (pi: ExtensionAPI) {
 			if (targetCard) {
 				targetCard.status = "running";
 				targetCard.agentName = resolved.agentName;
+				targetCard.modelName = runModel;
 				targetCard.lastLine = "";
 				startCardTimer(to_state);
 			}
@@ -1092,13 +1261,33 @@ export default function (pi: ExtensionAPI) {
 				});
 			}
 
-			const model = ctx.model
-				? `${ctx.model.provider}/${ctx.model.id}`
-				: "openrouter/google/gemini-2.5-flash-preview";
-
 			const timeoutMs = (targetStateDef.timeout_minutes ?? DEFAULT_TIMEOUT_MINUTES) * 60 * 1000;
 
-			const result = await spawnStateAgent(
+			const questionHandler = async (q: AgentQuestion) => {
+				if (!widgetCtx) return "[NO_UI] Running without a TUI context.";
+
+				const choices = [
+					...(q.options.length > 0 ? q.options : []),
+					...(q.allowFreeText || q.options.length === 0
+						? ["✏️  Other — type my own answer"] : []),
+				];
+
+				const header = `🤔 Agent question (${displayName(to_state)}): ${q.question}`;
+
+				// Pure free-text (no options) — go straight to input capture
+				if (choices.length <= 1) {
+					return captureTypedAnswer(q.question, to_state);
+				}
+
+				const choice = await widgetCtx.ui.select(header, choices);
+
+				if (!choice || choice.startsWith("✏️")) {
+					return captureTypedAnswer(q.question, to_state);
+				}
+				return choice;
+			};
+
+			let result = await spawnStateAgent(
 				resolved, model, sessDir, to_state, ledger.id,
 				timeoutMs,
 				(progress) => {
@@ -1106,7 +1295,52 @@ export default function (pi: ExtensionAPI) {
 					if (card) { card.lastLine = progress; updateWidget(); }
 				},
 				(proc) => { currentAgentProc = proc; },
+				questionHandler,
 			);
+
+			// Loop-breaker: some implementation runs keep repeating
+			// "Reply exactly: Proceed with tool execution now" instead of executing.
+			// Retry once with an explicit anti-loop execution override.
+			if (to_state === "implementation" && result.exitCode === 0 && isExecutionApprovalLoop(result.output)) {
+				if (onUpdate) {
+					onUpdate({
+						content: [{
+							type: "text",
+							text: "⚠️  Detected execution-approval loop in implementation output. Retrying once with forced tool-first override.",
+						}],
+						details: { to_state, status: "retrying_loop_breaker" },
+					});
+				}
+
+				const retryResolved: ResolvedStateAgent = {
+					...resolved,
+					workflowContext:
+						resolved.workflowContext + "\n\n" +
+						"## Execution Override (Chronicle)\n" +
+						"You are already authorized to run tools now. Do NOT ask for further approval.\n" +
+						"Immediately execute at least one concrete repository command before any narrative text.\n" +
+						"Then continue implementing all requested changes and provide evidence.",
+				};
+
+				const retry = await spawnStateAgent(
+					retryResolved, model, sessDir, to_state, ledger.id,
+					timeoutMs,
+					(progress) => {
+						const card = stateCards.get(to_state);
+						if (card) { card.lastLine = progress; updateWidget(); }
+					},
+					(proc) => { currentAgentProc = proc; },
+					questionHandler,
+				);
+
+				// Aggregate run metrics across both attempts
+				result = {
+					output: retry.output,
+					exitCode: retry.exitCode,
+					elapsed: result.elapsed + retry.elapsed,
+					tokensUsed: result.tokensUsed + retry.tokensUsed,
+				};
+			}
 
 			stopCardTimer(to_state);
 			const doneCard = stateCards.get(to_state);
@@ -1122,7 +1356,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Always accumulate totals
-			ledger.totalTokens += result.tokensUsed;
+			ledger.totalTokens  += result.tokensUsed;
 			ledger.totalElapsed += result.elapsed;
 
 			// ── Timeout: pause workflow and surface to user ───────────────────
@@ -1170,6 +1404,71 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
+			// ── Post-run approval gate (approval_mode:"post") ────────────────
+			// Runs AFTER the agent so the verdict shapes what happens next.
+			// APPROVE  → show human confirmation dialog before proceeding
+			// BLOCK    → surface structured result; supervisor asks user for routing
+			if (targetStateDef.requires_approval && approvalMode === "post") {
+				const verdictInfo = detectVerdict(result.output);
+
+				if (verdictInfo.verdict === "block") {
+					// Don't push to history — treat like a pause so the state can
+					// be re-run after corrections are made.
+					ledger.status = "paused";
+					const partial = result.output.slice(0, 2000);
+
+					// Extract which review states the output mentions so the
+					// supervisor can offer concrete routing options to the user.
+					const reviewStates = (targetStateDef.next ?? []).filter(
+						s => s !== "implementation" && s !== "done",
+					);
+					const routingHint = reviewStates.length
+						? `\nAvailable correction routes: ${reviewStates.map(s => `\`${s}\``).join(", ")}`
+						: "";
+
+					saveLedger(sessDir, ledger);
+					updateWidget();
+
+					return {
+						content: [{
+							type: "text",
+							text:
+								`⛔ **${displayName(to_state)}** — plan reviewer issued a **BLOCK**.\n\n` +
+								`The plan has not been approved. Do NOT proceed to implementation.\n` +
+								`(Verdict parser source: ${verdictInfo.source})\n` +
+								`**Ask the user** what they want to do:\n\n` +
+								`- Route back to one or more specialist agents to address the corrections\n` +
+								`- Override the block and proceed anyway (user must explicitly confirm this)\n` +
+								`- Abort the workflow\n` +
+								routingHint +
+								`\n\n---\n**Reviewer output:**\n\n${partial}`,
+						}],
+						details: { to_state, task, status: "blocked", verdict: "block", verdict_source: verdictInfo.source },
+					};
+				}
+
+				// verdictInfo.verdict === "approve" → show human confirmation before implementation
+				if (widgetCtx) {
+					const choice = await widgetCtx.ui.select(
+						`✅ Plan reviewer approved the plan. Proceed to implementation?`,
+						["Yes — begin implementation", "No — revise the plan further"],
+					);
+					if (!choice || choice.startsWith("No")) {
+						// User wants more revision — pause here too
+						ledger.status = "paused";
+						saveLedger(sessDir, ledger);
+						return {
+							content: [{
+								type: "text",
+								text: `Implementation deferred. Workflow paused at ${displayName(to_state)}.\n` +
+									`Call workflow_transition to route back to planning or any review state.`,
+							}],
+						};
+					}
+				}
+				// Human approved — fall through to normal completion below
+			}
+
 			// ── Normal completion (success or non-timeout error) ──────────────
 			// Push THIS state's record to history now that its agent has finished.
 			// We record it here — after the run — so:
@@ -1181,6 +1480,7 @@ export default function (pi: ExtensionAPI) {
 			const record: StateRecord = {
 				state: to_state,
 				agentName: resolved.agentName,
+				modelUsed: runModel,
 				startedAt: targetCard?.startedAt || (completedAt - result.elapsed),
 				completedAt,
 				summary,
@@ -1667,9 +1967,41 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	// ── input event — free-text answer capture ──────────────────────────────
+	// Armed by the onQuestion callback (below) when the user picks "Other".
+	// Fires before the LLM sees the message — returns { action: "handled" }
+	// so the typed text goes to the waiting agent, not to the supervisor.
+
+	pi.on("input", async (event: any, _ctx: any) => {
+		if (!pendingAnswerCallback) return { action: "continue" };
+		if (event.source !== "interactive") return { action: "continue" };
+
+		const cb = pendingAnswerCallback;
+		pendingAnswerCallback = null;
+		pendingQuestion = "";
+
+		// Write the answer to the pending answer file so the polling tool
+		// in the sub-agent picks it up immediately.
+		// (spawnStateAgent writes the file; we resolve the promise here
+		//  which causes the onQuestion callback to return the text, which
+		//  spawnStateAgent's async IIFE then writes to the file.)
+		cb(event.text);
+
+		// Update the running card to remove the "⌨" waiting indicator
+		if (ledger) {
+			const card = stateCards.get(ledger.currentState);
+			if (card) { card.lastLine = `✓ Answer received`; updateWidget(); }
+		}
+
+		return { action: "handled" };
+	});
+
 	// ── before_agent_start — supervisor system prompt ───────────────────────
 
 	pi.on("before_agent_start", async (_event, _ctx) => {
+		if (_ctx?.model?.provider && _ctx?.model?.id) {
+			lastSupervisorModel = `${_ctx.model.provider}/${_ctx.model.id}`;
+		}
 		if (!ledger) return {};
 
 		const currentDef = ledger.workflowDef.states[ledger.currentState];
@@ -1764,6 +2096,9 @@ ${agentCatalog}
 
 	pi.on("session_start", async (_event, _ctx) => {
 		applyExtensionDefaults(import.meta.url, _ctx);
+		if (_ctx?.model?.provider && _ctx?.model?.id) {
+			lastSupervisorModel = `${_ctx.model.provider}/${_ctx.model.id}`;
+		}
 
 		if (widgetCtx) widgetCtx.ui.setWidget("chronicle", undefined);
 		widgetCtx = _ctx;

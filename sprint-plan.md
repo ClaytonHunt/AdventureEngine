@@ -1,6 +1,30 @@
-# Sprint Plan — Sprint 2 · 2026-02-24
+# Sprint Plan — Sprint 3 · 2026-02-25
 
-**Capacity:** 8pt total · 6pt effective (20% buffer · `8 × 0.8 = 6.4` → 6pt)
+## Sprint 3 Outcome — COMPLETE ✅
+
+**Committed:** `52ef37d feat(api+web): Sprint 3 — health check VSA slice, RTL test harness, response compression`
+**Tests:** 48 .NET (43 SharedKernel + 5 Api.Tests) · 3 frontend · **51 total · 0 failing**
+**All 3 items delivered. All acceptance criteria met.**
+
+| ID | Title | Points | Status |
+|---|---|---|---|
+| item-005 | Health Check VSA slice with unit + integration tests | 3 | ✅ done |
+| item-007 | Configure Vitest + React Testing Library with passing component test | 2 | ✅ done |
+| item-017 | Add `UseResponseCompression()` to API middleware pipeline | 1 | ✅ done |
+
+**Notable decisions made in-sprint:**
+- Global `JsonNamingPolicy.CamelCase` via `ConfigureHttpJsonOptions` (not per-property attributes)
+- OTel filter upgraded to `StartsWithSegments("/health")` — covers `/health/live` + `/health/ready`
+- `EnableForHttps = false` on compression — explicit BREACH attack mitigation
+
+**Deferred to Sprint 4 (first pick: item-008):**
+- `application/json`/`text/plain` duplicate in `ResponseCompressionDefaults.MimeTypes.Concat()` — low-priority comment clean-up
+- Stale ProjectReference deferral comment in `Api.Tests.csproj` — low-priority comment clean-up
+- Security response headers (`HSTS`, `X-Content-Type-Options`, `X-Frame-Options`) — tracked alongside item-015 CORS
+
+---
+
+**Capacity:** 8pt raw · 6pt effective (20% buffer · `8 × 0.8 = 6.4` → 6pt)
 **Sprint Length:** 10 days
 **Total Planned:** 6pt across 3 items
 
@@ -8,220 +32,230 @@
 
 ## Sprint Goal
 
-> Establish the backend API surface and React frontend scaffold so that both tracks have a running, tested starting point — and the Aspire dashboard shows a live, registered API service alongside the React dev server.
+> Establish the first full-stack test foundation — a tested API health slice proving the VSA pattern end-to-end, a verified React component test harness, and a production-ready response compression middleware.
 
-**Sprint 2 is complete when:**
-- `dotnet run --project apps/AppHost` shows the `api` resource in the Aspire dashboard ✅
-- `GET /scalar/v1` renders the Scalar API reference UI ✅
-- `apps/web/` exists with TypeScript + ESLint + Prettier all passing ✅
-- `dotnet test AdventureEngine.slnx` discovers and passes both `SharedKernel.Tests` (43 tests, carried from Sprint 1) and the new `Api.Tests` placeholder ✅
-- `pnpm test`, `pnpm test:api`, and `pnpm build` (web-only) all exit 0 ✅
+**Sprint 3 is complete when:**
+- `GET /health` returns HTTP 200 `{ "status": "healthy" }` from a self-contained `Features/HealthCheck/` slice ✅
+- A `WebApplicationFactory<Program>` integration test and a pure unit test both pass via `dotnet test` ✅
+- `pnpm --filter web test --run` renders a real RTL component test green via Vitest ✅
+- `app.UseResponseCompression()` is wired in the API middleware pipeline with Brotli + Gzip ✅
+- `dotnet test AdventureEngine.slnx` exits 0 — all tests green, zero regressions ✅
 
 ---
 
-## Sprint 2 Context
+## Selected Items
 
-### What Sprint 1 delivered (all `done`)
-| Item | Deliverable |
+| ID | Title | Size | Points | Priority | AC Summary | First Workflow |
+|---|---|---|---|---|---|---|
+| **item-005** | Health Check VSA slice with unit + integration tests | large | 3 | 7 | `GET /health` → 200 `{ "status": "healthy" }`; slice self-contained under `Features/HealthCheck/`; unit test (no server) + integration test via `WebApplicationFactory<Program>`; serves as documented VSA template | TDD red → green → refactor |
+| **item-007** | Configure Vitest + React Testing Library with passing component test | medium | 2 | 8 | RTL packages added; `setupTests.ts` wires `@testing-library/jest-dom`; real component test with `toBeInTheDocument()`; coverage report generates clean | Add packages → write failing test → pass |
+| **item-017** | Add `UseResponseCompression()` to API middleware pipeline | small | 1 | 10 | `UseResponseCompression()` called after `UseHttpsRedirection()`; Brotli + Gzip providers + `application/json` MIME type; `Accept-Encoding: gzip` response includes `Content-Encoding: gzip`; all existing tests still pass | Locate TODO comment → implement → verify |
+
+**Total: 6pt / 6pt effective capacity**
+
+---
+
+## Recommended First Workflow
+
+**Start with item-005 (Health Check VSA slice).**
+
+Rationale:
+1. **It is the sprint anchor** — 3 of the 6 points live here. Getting it green early de-risks the sprint.
+2. **It unblocks the VSA template** — item-005's `Features/HealthCheck/` folder becomes the canonical reference for all future slices. The sooner it is written and reviewed, the sooner patterns are locked.
+3. **It completes a lingering wiring task** — item-005 is where `Api.Tests` finally gets its `ProjectReference` to `apps/Api` and the `WebApplicationFactory<Program>` harness is configured (per Decision-010). Both item-004 and item-014 are done, so there are zero blockers.
+4. **item-007 and item-017 are independent** — either can be picked up in parallel by a second developer, or sequentially after item-005 ships.
+
+**Recommended execution order (single developer):** item-005 → item-007 → item-017
+
+**Recommended execution order (two developers):** item-005 (Dev A) in parallel with item-007 + item-017 (Dev B)
+
+---
+
+## Item Detail
+
+### item-005 — Health Check VSA slice with unit + integration tests
+
+| Field | Value |
 |---|---|
-| item-001 | Monorepo skeleton — `apps/`, `packages/`, `package.json`, `.gitignore`, `.nvmrc`, `.editorconfig`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `AdventureEngine.slnx`, `README.md` placeholder |
-| item-002 | `packages/SharedKernel` — DDD primitives (Entity, ValueObject, AggregateRoot, IDomainEvent, IRepository, Result<T>, Error) + `packages/SharedKernel.Tests` with **43 passing xUnit tests** |
-| item-003 | `apps/AppHost` (Aspire.AppHost.Sdk 13.1.1) + `packages/ServiceDefaults` (AddServiceDefaults, OTel, health checks) + `CONTRIBUTING.md` |
+| **Type** | feature |
+| **Size** | large |
+| **Points** | 3 |
+| **Priority** | 7 (sprint anchor) |
+| **Status** | ✅ `done` |
+| **Dependencies** | item-004 ✅ done · item-014 ✅ done |
+| **Tags** | `backend`, `dotnet`, `vertical-slice`, `health-check`, `testing`, `template`, `architecture` |
 
-### Key decisions locked during Sprint 2 grooming
-| ID | Decision | Resolution |
-|---|---|---|
-| D-006 | .NET version | `net10.0` — SDK 10.0.103 pinned in `global.json` with `rollForward: latestPatch` |
-| D-007 | Aspire approach | NuGet secondary SDK (`Aspire.AppHost.Sdk 13.1.1`) — workload deprecated in .NET 10; no `dotnet workload install aspire` needed |
-| D-008 | Solution format | `.slnx` — default for `dotnet new sln` on .NET 10; all `dotnet test`/`dotnet build` commands use `AdventureEngine.slnx` |
-| D-009 | SharedKernel.Tests | Delivered in Sprint 1 as part of item-002; item-014 scope = **Api.Tests only** |
-| D-010 | Api.Tests → Api ref | Deferred to Sprint 3 (item-005) — item-014 scaffolds `Api.Tests` with placeholder `[Fact]` only; no `ProjectReference` to `apps/Api` until item-005 |
+**Description:**
+Implement `Features/HealthCheck/` as the first full VSA vertical slice. The slice adds a dedicated `GET /health` endpoint (separate from the ServiceDefaults `/health/live` and `/health/ready` endpoints already present — this one demonstrates the VSA file layout). It includes the endpoint registration, a `HealthResponse` DTO, and a handler. This item also completes the `Api.Tests` ↔ `Api` wiring: add the `ProjectReference` to `apps/Api` and set up `WebApplicationFactory<Program>` for integration tests.
+
+> **Key decisions in scope:**
+> - **Decision-010 LOCKED:** The `ProjectReference` from `Api.Tests` → `Api` is added *in this item* — not item-014.
+> - No MediatR. Endpoint calls handler directly. This is the canonical VSA template for all future slices.
+> - A comment or `README.md` update in the slice folder explains the file layout convention.
+
+**Acceptance Criteria:**
+
+1. `GET /health` returns HTTP 200 with body `{ "status": "healthy" }` and `Content-Type: application/json`.
+2. `Features/HealthCheck/` folder contains at minimum: endpoint registration, `HealthResponse` DTO, and co-located test(s) — no references to other feature folders.
+3. A unit test verifies the handler returns the correct result without starting a web server.
+4. An integration test uses `WebApplicationFactory<Program>` to call `GET /health` and asserts HTTP 200 + correct JSON body.
+5. All tests pass via `dotnet test AdventureEngine.slnx` (exit code 0, zero regressions against the 44 existing tests).
+6. `apps/Api.Tests/AdventureEngine.Api.Tests.csproj` now contains a `ProjectReference` to `apps/Api/AdventureEngine.Api.csproj`.
+
+**Implementation notes:**
+1. Add `<ProjectReference Include="..\..\apps\Api\AdventureEngine.Api.csproj" />` to `Api.Tests.csproj`.
+2. Create `apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs` — minimal endpoint with `app.MapGet("/health", ...)`.
+3. Create `apps/Api/Features/HealthCheck/HealthResponse.cs` — simple record: `record HealthResponse(string Status)`.
+4. Write `apps/Api.Tests/Features/HealthCheck/HealthCheckTests.cs` with both unit and integration test classes.
+5. Use `WebApplicationFactory<Program>` — ensure `Program.cs` is accessible (add `public partial class Program {}` at end of `Program.cs` if needed).
 
 ---
 
-## Execution Order and Parallelism
-
-```
-All three items are unblocked on Day 1 (all Sprint 1 deps are done).
-
-[Backend track]                      [Frontend track]
-────────────────────────────         ─────────────────────────────
-item-014  (Api.Tests scaffold)       item-006  (React Vite scaffold)
-     ↓
-item-004  (API + Aspire + OpenAPI)
-```
-
-**Two-developer split:** Assign item-014 + item-004 to Dev A (backend), item-006 to Dev B (frontend). Both tracks are fully independent.
-
-**Single-developer order:** item-014 → item-004 → item-006
-
-> ⚠️ **Directory.Packages.props merge risk:** Both item-014 and item-004 add new NuGet packages to the central package file. Merge item-014 first to reduce the conflict window. See Risk #1 below.
-
----
-
-## Sprint Items
-
-### Item 1 of 3 — item-014: Scaffold Api.Tests xUnit project and wire to solution
+### item-007 — Configure Vitest + React Testing Library with a passing component test
 
 | Field | Value |
 |---|---|
 | **Type** | chore |
 | **Size** | medium |
 | **Points** | 2 |
-| **Priority** | 4 (highest in sprint — unblocks item-005 test harness in Sprint 3) |
-| **Status** | `in-sprint` |
-| **Dependencies** | item-002 ✅ done · item-003 ✅ done |
-| **Tags** | `backend`, `testing`, `xunit`, `dx` |
+| **Priority** | 8 |
+| **Status** | ✅ `done` |
+| **Dependencies** | item-006 ✅ done |
+| **Tags** | `frontend`, `testing`, `vitest`, `react-testing-library`, `dx` |
 
 **Description:**
-Create `apps/Api.Tests/AdventureEngine.Api.Tests.csproj` as the xUnit test project for the API layer. Wire it with `FluentAssertions`, `NSubstitute`, and `Microsoft.AspNetCore.Mvc.Testing` (for future `WebApplicationFactory`-based integration tests in Sprint 3). Add the project to `AdventureEngine.slnx`. Confirm `dotnet test` discovers and passes a placeholder assertion.
+Add `@testing-library/react` and `@testing-library/jest-dom` to `apps/web`, wire a `src/setupTests.ts` into `vitest.config.ts`, and write the first real component test. Vitest itself and `vitest.config.ts` (with `environment: jsdom` and root-level `resolve.alias` — Decision-012) were delivered by item-006. This item adds the RTL layer and proves the full render pipeline.
 
-> **Scope boundary (D-009 + D-010):**
-> - `packages/SharedKernel.Tests/` (43 tests) was fully delivered in Sprint 1 — do NOT recreate it.
-> - This item does **not** add a `ProjectReference` to `apps/Api`. The Api project (item-004) may not be merged when this item runs. The `ProjectReference` and `WebApplicationFactory<Program>` wiring are added in item-005 (Sprint 3), which explicitly depends on both item-004 and item-014.
+> **Prerequisite observation:** `@testing-library/react` and `@testing-library/jest-dom` are NOT yet in `apps/web/package.json` — they must be added as part of this item.
+> **Decision-012 LOCKED:** `resolve.alias` must remain at the root level of `defineConfig`, not nested inside the `test:{}` block — nesting silently breaks `@/` imports in test files.
 
 **Acceptance Criteria:**
 
-- **AC1 — Project file:** Given `apps/Api.Tests/AdventureEngine.Api.Tests.csproj`, when inspected, then it references `xunit`, `FluentAssertions`, `NSubstitute`, and `Microsoft.AspNetCore.Mvc.Testing` via NuGet (all versions sourced from `Directory.Packages.props`) — it does **NOT** yet reference the `Api` project (that wiring happens in item-005).
-
-- **AC2 — Central package version management:** Given `Microsoft.AspNetCore.Mvc.Testing` is added to `Directory.Packages.props` before the project is created, when `dotnet restore` runs, then the package resolves at the correct version and no manual version pin exists in the `.csproj`.
-
-- **AC3 — Solution discovery:** Given the `Api.Tests` project is added to `AdventureEngine.slnx`, when `dotnet test AdventureEngine.slnx` is run, then `Api.Tests` is discovered alongside `SharedKernel.Tests` and all tests pass (exit code 0).
-
-- **AC4 — Placeholder test:** Given a placeholder `[Fact]` in `Api.Tests` (e.g., `(1 + 1).Should().Be(2)` using FluentAssertions), when `dotnet test` runs, then it passes — proving the test pipeline is wired end to end.
-
-- **AC5 — Infrastructure-free:** Given the `Api.Tests` project, when inspected, then it does **not** reference EF Core, database drivers, or any infrastructure package.
-
-- **AC6 — Root test:api script:** Given `pnpm test:api` at the repo root, when run after first executing `dotnet build AdventureEngine.slnx` (the live script uses `--no-build`), then it invokes the test run and the exit code propagates correctly (0 on pass, non-zero on failure).
+1. `pnpm --filter web test --run` passes and exits 0.
+2. `vitest.config.ts` is updated to include a `setupFiles` entry pointing to `src/setupTests.ts` (alongside existing `environment: 'jsdom'` and root-level `resolve.alias`).
+3. `src/setupTests.ts` imports `@testing-library/jest-dom` to extend `expect` with DOM matchers.
+4. The component test uses `render` and `screen` from `@testing-library/react` and asserts at least one `.toBeInTheDocument()` — not a trivial arithmetic assertion.
+5. `@testing-library/react` and `@testing-library/jest-dom` are added to `apps/web/package.json` devDependencies and `pnpm-lock.yaml` is updated.
+6. `pnpm --filter web test --coverage` generates a coverage report and exits 0.
 
 **Implementation notes:**
-1. Add `Microsoft.AspNetCore.Mvc.Testing` to `Directory.Packages.props` first (before creating the project).
-2. Use `dotnet new xunit -n AdventureEngine.Api.Tests -o apps/Api.Tests --framework net10.0`.
-3. Add to solution: `dotnet sln AdventureEngine.slnx add apps/Api.Tests/AdventureEngine.Api.Tests.csproj`.
-4. Add NuGet refs: `dotnet add apps/Api.Tests package xunit`, `FluentAssertions`, `NSubstitute`, `Microsoft.AspNetCore.Mvc.Testing` (no version flags — versions come from `Directory.Packages.props`).
-5. Replace the default `UnitTest1.cs` with a clearly named placeholder, e.g. `PlaceholderTests.cs`.
+1. `pnpm --filter web add -D @testing-library/react @testing-library/jest-dom @testing-library/user-event`.
+2. Create `apps/web/src/setupTests.ts` with `import '@testing-library/jest-dom'`.
+3. Update `vitest.config.ts`: add `setupFiles: ['./src/setupTests.ts']` to the `test:{}` block.
+4. Write `apps/web/src/App.test.tsx` — render `<App />` and assert the heading is visible (e.g. `screen.getByRole('heading')`).
+5. Do NOT move `resolve.alias` inside `test:{}` — keep it at root scope (Decision-012).
 
 ---
 
-### Item 2 of 3 — item-004: Scaffold ASP.NET Core Web API wired to Aspire with OpenAPI
+### item-017 — Add `UseResponseCompression()` to API middleware pipeline
 
 | Field | Value |
 |---|---|
 | **Type** | chore |
-| **Size** | medium |
-| **Points** | 2 |
-| **Priority** | 5 |
-| **Status** | `in-sprint` |
-| **Dependencies** | item-002 ✅ done · item-003 ✅ done |
-| **Tags** | `backend`, `dotnet`, `api`, `openapi`, `aspire` |
+| **Size** | small |
+| **Points** | 1 |
+| **Priority** | 10 |
+| **Status** | ✅ `done` |
+| **Dependencies** | item-004 ✅ done |
+| **Tags** | `backend`, `dotnet`, `performance`, `middleware` |
 
 **Description:**
-Create `apps/Api/AdventureEngine.Api.csproj` as an ASP.NET Core Minimal API project targeting `net10.0`. Reference `SharedKernel` and `ServiceDefaults`. Register the API in the Aspire `AppHost` so it appears in the dashboard. Configure built-in .NET 10 OpenAPI (`AddOpenApi()` / `MapOpenApi()`) and Scalar UI. Add a `Features/` folder with a `README.md` documenting the VSA slice convention. Wire the project into `AdventureEngine.slnx`.
+Wire `UseResponseCompression()` into the ASP.NET Core middleware pipeline in `apps/Api/Program.cs`. A `// TODO Sprint 3` comment already marks the exact insertion point (after `UseHttpsRedirection()`). Register `AddResponseCompression()` in the DI container with explicit Brotli + Gzip providers and `application/json` MIME type support.
 
-> **D-002:** Built-in .NET 10 OpenAPI + Scalar UI only. No Swashbuckle — not referenced anywhere.
-> **D-006:** Target `net10.0`.
-> **D-007:** Register in AppHost via `builder.AddProject<Projects.AdventureEngine_Api>("api")`.
+> **Decision-013 LOCKED:** Deferred from Sprint 2 — the TODO comment in `Program.cs` is the canonical insertion point. Do not search for another location.
 
 **Acceptance Criteria:**
 
-- **AC1 — Project compiles:** Given `dotnet build AdventureEngine.slnx`, when run after this item, then the Api project compiles with zero errors and zero warnings, and all project references (SharedKernel, ServiceDefaults) resolve correctly.
-
-- **AC2 — Aspire dashboard:** Given `dotnet run --project apps/AppHost`, when the Aspire host starts, then the `api` resource appears in the Aspire dashboard and `GET /health/live` returns HTTP 200 (via ServiceDefaults `MapDefaultEndpoints()`).
-
-- **AC3 — Program.cs wiring:** Given `apps/Api/Program.cs`, when inspected, then it calls `builder.AddServiceDefaults()`, `builder.Services.AddOpenApi()`, `app.MapOpenApi()`, and `app.MapDefaultEndpoints()`, with an inline comment referencing Decision-002.
-
-- **AC4 — Scalar UI:** Given the API starts in Development mode, when a developer navigates to `/scalar/v1` (or the configured Scalar UI path), then the Scalar API reference UI renders listing all registered endpoints — Swashbuckle is **not** referenced anywhere in the project.
-
-- **AC5 — Standalone run:** Given `dotnet run --project apps/Api`, when run without Aspire, then the API starts on a configurable port and `GET /health/live` returns HTTP 200.
-
-- **AC6 — VSA Features folder:** Given `apps/Api/Features/`, when inspected, then the folder exists with a `README.md` describing the vertical slice convention and naming rules for new slices.
-
-- **AC7 — NuGet packages:** Given `Microsoft.AspNetCore.OpenApi` and the Scalar package (verify exact name: `Scalar.AspNetCore` on NuGet.org; fallback `Microsoft.AspNetCore.Scalar`) are added to `Directory.Packages.props`, when `dotnet restore` runs, then both packages resolve without errors.
+1. `app.UseResponseCompression()` is called after `app.UseHttpsRedirection()` and before `app.MapDefaultEndpoints()`.
+2. `builder.Services.AddResponseCompression()` is registered before `builder.Build()` with explicit Brotli and Gzip providers and `application/json` in the MIME type list.
+3. A request with `Accept-Encoding: gzip` receives `Content-Encoding: gzip` in the response.
+4. `dotnet build AdventureEngine.slnx` exits 0 with zero errors and zero warnings.
+5. `dotnet test AdventureEngine.slnx` exits 0 — all existing tests pass, zero regressions.
 
 **Implementation notes:**
-1. ⚠️ **Before writing code** — verify the exact Scalar package name at [nuget.org](https://www.nuget.org). Search `Scalar.AspNetCore`. If that package exists, use it. If not, search `Microsoft.AspNetCore.Scalar`. Record the confirmed name in the item's notes field in `backlog.json`.
-2. Use `dotnet new webapi --minimal -n AdventureEngine.Api -o apps/Api --framework net10.0`.
-3. Add solution: `dotnet sln AdventureEngine.slnx add apps/Api/AdventureEngine.Api.csproj`.
-4. Add project refs: `dotnet add apps/Api reference packages/SharedKernel packages/ServiceDefaults`.
-5. Register in AppHost: open `apps/AppHost/Program.cs` and add `var api = builder.AddProject<Projects.AdventureEngine_Api>("api");`.
-6. Create `apps/Api/Features/README.md` documenting the VSA convention (feature folder → endpoint class → response DTO, no MediatR).
+1. Locate the `// TODO Sprint 3` comment in `apps/Api/Program.cs`.
+2. Add `builder.Services.AddResponseCompression(options => { options.Providers.Add<BrotliCompressionProvider>(); options.Providers.Add<GzipCompressionProvider>(); options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/json" }); });` before `var app = builder.Build();`.
+3. Add `app.UseResponseCompression();` at the marked position (after `UseHttpsRedirection()`).
+4. No new NuGet packages required — `Microsoft.AspNetCore.ResponseCompression` is included in the ASP.NET Core shared framework.
 
 ---
 
-### Item 3 of 3 — item-006: Scaffold React Vite app with TypeScript, path aliases, ESLint, and Prettier
+## Deferred Items
+
+### item-008 — Set up Storybook with baseline Button component + story (2pt)
 
 | Field | Value |
 |---|---|
-| **Type** | chore |
 | **Size** | medium |
 | **Points** | 2 |
-| **Priority** | 6 |
-| **Status** | `in-sprint` |
-| **Dependencies** | item-001 ✅ done |
-| **Tags** | `frontend`, `react`, `vite`, `typescript`, `dx`, `scaffold` |
+| **Dependencies** | item-006 ✅ done |
+| **Reason deferred** | Would put Sprint 3 at 8pt — one over the 6pt effective capacity cap. Fully sprint-ready; first pick for Sprint 4. |
 
-**Description:**
-Bootstrap the React frontend at `apps/web/` using `pnpm create vite` with the React-TS template. Configure `@/` path aliases in both `vite.config.ts` (Vite runtime) and `tsconfig.json` (TypeScript language server). Add ESLint (react-hooks + @typescript-eslint/recommended rules) and Prettier. Confirm the dev server starts, TypeScript strict mode passes, linting is clean, and the production build succeeds. Update the root `package.json` `test` and `build` scripts from their Sprint 1 `echo` placeholders to real commands.
+**Sprint 4 note:** item-008 is the first item to pull into Sprint 4. It requires no re-grooming and has no outstanding blockers. The root `package.json` `storybook` script is currently an `echo` placeholder — item-008 is responsible for updating it to `pnpm --filter web storybook`.
 
-> **D-001:** React Vite project lives at `apps/web/`.
+---
 
-**Acceptance Criteria:**
+## Sprint Horizon
 
-- **AC1 — Dev server:** Given `pnpm --filter web dev` (or `pnpm dev` from `apps/web/`), when executed, then the Vite dev server starts and `http://localhost:5173` serves the React app without errors.
+### Sprint 4 (6pt) — Component catalogue + frontend integration
 
-- **AC2 — Path alias:** Given a TypeScript file using `import { foo } from '@/utils/foo'`, when Vite builds and the TypeScript language server resolves it, then the import resolves correctly in both `vite.config.ts` (runtime) and `tsconfig.json` (type-checking) with no errors.
+| ID | Title | Points | Unblocked by |
+|---|---|---|---|
+| item-008 | Set up Storybook with baseline Button + story | 2 | item-006 ✅ |
+| item-009 | Configure Playwright e2e suite with one smoke test | 2 | item-006 ✅ |
+| item-015 | Configure CORS policy for React dev server ↔ ASP.NET API | 1 | item-004 ✅ · item-006 ✅ |
+| item-018 | Resolve minimatch@3.1.3 transitive CVE in ESLint dep chain | 1 | item-006 ✅ |
 
-- **AC3 — Linting:** Given `pnpm --filter web lint`, when run, then ESLint reports zero errors on the freshly scaffolded codebase (react-hooks and @typescript-eslint/recommended rules active).
+**Sprint 4 goal (draft):** Establish the component catalogue and e2e pipeline — Storybook live, Playwright smoke test green, CORS unblocking frontend↔API integration, and the audit-blocking CVE resolved.
 
-- **AC4 — Formatting:** Given a `.prettierrc` at `apps/web/` (or repo root), when `prettier --check .` is run from `apps/web/`, then all files pass formatting checks.
+---
 
-- **AC5 — Production build:** Given `pnpm --filter web build`, when run, then Vite produces a production bundle in `apps/web/dist/` with zero TypeScript errors (`tsc --noEmit` also passes).
+### Sprint 5 (6pt) — Orchestration, CI, and docs
 
-- **AC6 — Root `test` script:** Given the root `package.json` `test` script, when this item is delivered, then it is updated from the `echo` placeholder to `pnpm --filter web test --run` (CI-safe, non-watch Vitest command).
+| ID | Title | Points | Unblocked by |
+|---|---|---|---|
+| item-010 | Wire root orchestration scripts for single-command start + test | 2 | item-007 ✅ S3 · item-008 S4 · item-009 S4 |
+| item-011 | Add .env.example with all environment variables documented | 1 | item-004 ✅ · item-015 S4 |
+| item-012 | Add Docker Compose alternative local start | 2 | item-004 ✅ · item-011 S5 |
+| item-013 | Write README with Getting Started + dev commands | 1 | item-010 S5 · item-011 S5 · item-012 S5 · item-016 |
 
-- **AC7 — Root `build` script:** Given the root `package.json` `build` script, when this item is delivered, then it is updated from the `echo` placeholder to `pnpm --filter web build` — the `dotnet publish apps/Api` half is intentionally omitted here and added in item-010, since the Api project (item-004) may not be merged yet.
+**Sprint 5 goal (draft):** Complete the developer experience — single-command start, documented environment variables, Docker Compose alternative, and the full README.
 
-**Implementation notes:**
-1. Scaffold: `pnpm create vite apps/web --template react-ts` from the repo root (or `cd apps && pnpm create vite web --template react-ts`).
-2. Path alias in `vite.config.ts`: add `resolve: { alias: { '@': path.resolve(__dirname, 'src') } }`.
-3. Path alias in `tsconfig.json`: add `"paths": { "@/*": ["./src/*"] }` under `compilerOptions`.
-4. ⚠️ **ESLint v9 note:** `pnpm create vite` may generate an ESLint v9 flat config (`eslint.config.js`). Both flat config and legacy `.eslintrc.json` are acceptable — document which format was used in the item's `notes` in `backlog.json` so downstream contributors aren't surprised.
-5. Do not include `dotnet publish apps/Api` in the root `build` script — defer that to item-010.
-6. Verify `test:api` in root `package.json` is **unchanged** after modifying `test` and `build` scripts.
+> **Note on item-016 (GitHub Actions CI, 2pt):** item-016 depends on item-010 and item-018 (both resolved by end of Sprint 4/5). It may slot into Sprint 5 or form the anchor of a Sprint 6. Evaluate at Sprint 5 planning.
 
 ---
 
 ## Definition of Done
 
-Every item in this sprint must satisfy all of the following before its status is changed to `done` in `backlog.json`:
+Every item in this sprint must satisfy all of the following before status is changed to `done` in `.pi/chronicle/backlog.json`:
 
 ### Code Quality
-- [ ] Code compiles with zero errors and zero warnings (`dotnet build AdventureEngine.slnx` / `pnpm --filter web build` + `tsc --noEmit`)
-- [ ] No commented-out dead code committed to `main`
-- [ ] All public C# types/methods have XML doc comments; all exported TypeScript types/functions have JSDoc
+- [x] Code compiles with zero errors and zero warnings (`dotnet build AdventureEngine.slnx` / `pnpm --filter web build` + `tsc --noEmit`)
+- [x] No commented-out dead code committed to `main`
+- [x] All public C# types/methods have XML doc comments; all exported TypeScript functions have JSDoc
 
 ### Testing
-- [ ] All acceptance criteria listed above are verifiably satisfied
-- [ ] `dotnet test AdventureEngine.slnx` exits 0 — **all 43+ tests green, zero regressions**
-- [ ] No new TypeScript or C# compiler warnings introduced
+- [x] All acceptance criteria listed above are verifiably satisfied
+- [x] `dotnet test AdventureEngine.slnx` exits 0 — all 44+ tests green, zero regressions
+- [x] No new TypeScript or C# compiler warnings introduced
 
 ### Review
-- [ ] Code reviewed (self-review with checklist is acceptable for solo developer)
-- [ ] Commit message references the item ID using Conventional Commits format: `feat(api): scaffold Api project (item-004)`
-- [ ] Branch merged to `main` and working branch deleted
+- [x] Code reviewed (self-review with checklist is acceptable for solo developer)
+- [x] Commit message references item ID using Conventional Commits format (e.g. `feat(api): implement health check VSA slice (item-005)`)
+- [x] Branch merged to `main` and working branch deleted
 
 ### Backlog Hygiene
-- [ ] Item `status` updated to `"done"` in `.pi/chronicle/backlog.json`
-- [ ] Any new decisions or findings recorded in the item's `notes` field
-- [ ] If a new locked decision was made, it is added to `_decisions_locked` in `backlog.json`
+- [x] Item `status` updated to `"done"` in `.pi/chronicle/backlog.json`
+- [x] Any new decisions or findings recorded in the item's `notes` field
+- [x] If a new locked decision was made, it is added to `_decisions_locked` in `.pi/chronicle/backlog.json`
 
 ### Sprint Goal Check (run at sprint end — not per item)
-- [ ] `dotnet run --project apps/AppHost` → `api` resource visible in Aspire dashboard
-- [ ] `GET /scalar/v1` → Scalar API reference UI renders in browser
-- [ ] `pnpm --filter web dev` → Vite dev server starts at `http://localhost:5173`
-- [ ] `dotnet test AdventureEngine.slnx` → all tests pass (including new `Api.Tests` placeholder)
-- [ ] `pnpm test --run` (or `pnpm test` root script) → exits 0
-- [ ] `pnpm build` (root) → `pnpm --filter web build` completes successfully
+- [x] `GET /health` → HTTP 200 `{ "status": "healthy" }` with `Content-Type: application/json`
+- [x] `dotnet test AdventureEngine.slnx` → all tests pass (44+ green)
+- [x] `pnpm --filter web test --run` → RTL component test passes, exits 0
+- [x] `pnpm --filter web test --coverage` → coverage report generates, exits 0
+- [x] `dotnet build AdventureEngine.slnx` → zero errors, zero warnings
+- [x] A request with `Accept-Encoding: gzip` to the API → response contains `Content-Encoding: gzip`
 
 ---
 
@@ -229,86 +263,39 @@ Every item in this sprint must satisfy all of the following before its status is
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| 1 | **`Directory.Packages.props` merge conflict** — item-014 and item-004 both add NuGet packages to the central package file simultaneously | Medium | Low | Merge item-014 first (single package addition, small diff). item-004 then adds its packages to an already-updated file. If working in parallel branches, cherry-pick the package-props commit onto item-004's branch before merging. |
-| 2 | **Scalar package name uncertainty** — exact NuGet package name for Scalar UI with .NET 10 may differ | Low | Medium | **First step of item-004:** go to nuget.org and confirm `Scalar.AspNetCore`. If that doesn't exist, search for `Microsoft.AspNetCore.Scalar`. Record the confirmed name in item-004's `notes` before writing any code. |
-| 3 | **ESLint v9 flat config complexity** — `pnpm create vite` (React-TS template) may generate the new `eslint.config.js` flat config format, which has different syntax from the legacy `.eslintrc.json` | Medium | Medium | Both formats are valid — accept whichever format the scaffold generates. Document the chosen format in item-006 `notes`. Do not invest time in migrating between formats during this sprint. |
-| 4 | **Root `package.json` script collision** — item-006 modifies `test` and `build` scripts; risk of accidentally overwriting the working `test:api` script | Low | High | When editing root `package.json`, read the current file first, update **only** the `test` and `build` keys, and verify `test:api`, `test:e2e`, `storybook`, and `start` are unchanged afterward. |
-| 5 | **Aspire dashboard HTTPS error after Api registration** — adding a new project to the AppHost may trigger a new HTTPS binding that requires a fresh dev cert | Low | Medium | If the Aspire dashboard shows a cert error after item-004 is wired, run `dotnet dev-certs https --trust` again and restart. This is documented in `CONTRIBUTING.md` (from Sprint 1 item-003). |
+| 1 | **`WebApplicationFactory<Program>` accessibility** — `Program` class may be `internal` or inaccessible in the test project | Low | High | Add `public partial class Program {}` at the bottom of `apps/Api/Program.cs` if `WebApplicationFactory<Program>` fails to compile. This is the standard .NET Minimal API workaround. |
+| 2 | **`UseResponseCompression` ordering regression** — middleware order in ASP.NET Core is significant; inserting at wrong position could suppress compression or break existing health check assertions | Low | Medium | Insert *exactly* at the `// TODO Sprint 3` marker (after `UseHttpsRedirection()`, before `MapDefaultEndpoints()`). Run `dotnet test` immediately after — AC5 guards against regressions. |
+| 3 | **RTL `@testing-library/jest-dom` type mismatch** — if `tsconfig.json` does not include the jest-dom type declarations, `toBeInTheDocument()` may fail TypeScript compilation even though the test runs | Low | Medium | Ensure `apps/web/tsconfig.app.json` includes `"@testing-library/jest-dom"` in `compilerOptions.types` or that `setupTests.ts` import is picked up via `include`. If types fail, add `/// <reference types="@testing-library/jest-dom" />` to `setupTests.ts`. |
+| 4 | **Response compression breaks OpenAPI/Scalar UI** — in rare cases, compression middleware positioned before OpenAPI map handlers can cause issues with the Scalar UI static assets | Low | Low | If Scalar UI stops rendering after item-017, temporarily disable compression for the `/openapi/*` and `/scalar/*` routes using `options.ExcludedMimeTypes` or a custom predicate. This does not affect the sprint goal. |
 
 ---
 
-## Deferred (did not fit)
-
-No ready item was left out — effective capacity is exactly 6pt and planned work is exactly 6pt.
-
-The next-highest-priority pending item is:
-
-- **item-005** — Implement Health Check vertical slice with unit and integration tests (large, 3pt) — **not ready for this sprint** because it depends on item-004 and item-014, which are themselves in-sprint and not yet done. Will be Sprint 3's anchor item.
-
----
-
-## Blocked (not ready)
-
-Items excluded from planning because their dependencies are not yet resolved:
-
-| Item | Reason |
-|---|---|
-| item-005 | Depends on item-004 (in-sprint) and item-014 (in-sprint) |
-| item-007 | Depends on item-006 (in-sprint) |
-| item-008 | Depends on item-006 (in-sprint) |
-| item-009 | Depends on item-006 (in-sprint) |
-| item-015 | Depends on item-004 (in-sprint) and item-006 (in-sprint) |
-| item-010 | Depends on item-003 ✅, item-004 (in-sprint), item-006 (in-sprint), item-007, item-008, item-009 |
-| item-011 | Depends on item-004 (in-sprint), item-006 (in-sprint), item-015 |
-| item-012 | Depends on item-004 (in-sprint), item-011 |
-| item-016 | Depends on item-010 |
-| item-013 | Depends on item-010, item-011, item-012, item-016 |
-
----
-
-## Sprint 3 Preview
-
-Sprint 3 is fully unblocked the moment Sprint 2 closes. No new decisions are required.
-
-| Item | Title | Points | Unblocked by |
-|---|---|---|---|
-| **item-005** | Health Check vertical slice with unit + integration tests | 3 | item-004 ✅ S2 + item-014 ✅ S2 |
-| **item-007** | Configure Vitest + React Testing Library with example test | 2 | item-006 ✅ S2 |
-| **item-008** | Set up Storybook with baseline Button + story | 2 | item-006 ✅ S2 |
-
-**Sprint 3 total:** 7pt — one point over the 6pt effective capacity. Options:
-1. Accept 7pt (use the buffer intentionally — all three items are well-groomed and sized).
-2. Defer item-008 (2pt) to Sprint 4 and keep Sprint 3 at 5pt with room for unplanned work.
-
-**Sprint 3 goal (draft):** Prove the full VSA round-trip — a backend health-check slice with WebApplicationFactory integration tests — and establish the React unit-test and component-catalogue toolchains.
-
----
-
-## Backlog Summary After Sprint 2 Planning
+## Backlog Summary After Sprint 3 Planning
 
 | State | Items | Points |
 |---|---|---|
-| ✅ Done (Sprint 1) | 3 | 6pt |
-| 🏃 In-sprint (Sprint 2) | 3 | 6pt |
-| ⏳ Pending | 10 | 18pt |
-| **Total** | **16** | **30pt** |
+| ✅ Done (Sprints 1–3) | 9 | 19pt |
+| ⏳ Pending | 9 | 16pt |
+| **Total** | **18** | **35pt** |
 
-**Estimated sprints to clear backlog:** ~5 total (3 remaining at 6pt/sprint for pending work)
+**Estimated sprints to clear backlog:** ~3 remaining after Sprint 3 (at 6pt/sprint for pending work)
 
 ### Full Roadmap
 
 | Sprint | Items | Points | Focus |
 |---|---|---|---|
-| S1 ✅ | 3 | 6 | Monorepo foundation · .NET skeleton · Aspire scaffold |
-| **S2 ← you are here** | **3** | **6** | API test harness · ASP.NET Core API · React scaffold |
-| S3 | 3 | 7* | First VSA slice + integration tests · Vitest · Storybook |
-| S4 | 3 | 5 | Playwright e2e · CORS · Root orchestration scripts |
-| S5 | 4 | 6 | `.env.example` · Docker Compose · GitHub Actions CI · README |
+| S1 ✅ | 3 | 6 | Monorepo foundation · SharedKernel DDD primitives · Aspire scaffold |
+| S2 ✅ | 3 | 6 | Api.Tests scaffold · ASP.NET Core API + OpenAPI · React Vite scaffold |
+| **S3 ✅** | **3** | **6** | **Health Check VSA slice + integration tests · Vitest + RTL · Response compression** |
+| S4 | 4 | 6 | Storybook · Playwright e2e · CORS · CVE fix |
+| S5 | 4 | 6 | Orchestration scripts · .env.example · Docker Compose · README |
+| S6* | 1–2 | 2–3 | GitHub Actions CI + any overflow |
 
-*Sprint 3 is 7pt — one point over effective capacity. Re-evaluate at Sprint 3 planning.
+*Sprint 6 is provisional — item-016 (GitHub Actions CI, 2pt) may fold into Sprint 5 depending on velocity.
 
 ---
 
-*Sprint 2 plan finalised: 2026-02-24*
+*Sprint 3 plan finalised: 2026-02-25*
+*Sprint 3 completed: 2026-02-25*
 *Authoritative item data: `.pi/chronicle/backlog.json`*
-*Grooming artefacts: `SPRINT_2_PLAN.md` · `GROOMING_SUMMARY_SPRINT2.md`*
+*Grooming artefacts: `SPRINT_PLANNING_HANDOFF.md`*

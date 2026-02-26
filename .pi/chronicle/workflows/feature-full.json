@@ -4,89 +4,147 @@
   "initial": "scope-review",
   "states": {
     "scope-review": {
-      "description": "MVP scoping gate — evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
+      "description": "MVP scoping gate \u00e2\u20ac\u201d evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
       "agent": "scope-reviewer",
-      "next": ["planning"],
-      "requires_approval": false
+      "next": [
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 10
     },
     "planning": {
-      "description": "Architecture planning and task breakdown — plan against the scoped increment defined by scope-review, not the full original request",
+      "description": "Architecture planning and task breakdown \u00e2\u20ac\u201d plan against the scoped increment defined by scope-review, not the full original request",
       "agent": "planner",
-      "next": ["architecture-review", "scope-review"],
-      "requires_approval": false
+      "next": [
+        "architecture-review",
+        "scope-review"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "architecture-review": {
-      "description": "Architecture and design review — SOLID principles, coupling, cohesion, API contracts, scalability",
+      "description": "Architecture and design review \u00e2\u20ac\u201d SOLID principles, coupling, cohesion, API contracts, scalability",
       "agent": "architect",
-      "next": ["security-review", "planning"],
-      "requires_approval": false
+      "next": [
+        "security-review",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "security-review": {
-      "description": "Pre-implementation security review — threat modeling, attack surface analysis, auth flows, data exposure risks",
+      "description": "Pre-implementation security review \u00e2\u20ac\u201d threat modeling, attack surface analysis, auth flows, data exposure risks",
       "agent": "security-auditor",
-      "next": ["performance-review", "planning"],
-      "requires_approval": false
+      "next": [
+        "performance-review",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "performance-review": {
-      "description": "Pre-implementation performance review — algorithmic complexity, DB query patterns, caching needs, bottleneck predictions",
+      "description": "Pre-implementation performance review \u00e2\u20ac\u201d algorithmic complexity, DB query patterns, caching needs, bottleneck predictions",
       "agent": "performance-engineer",
-      "next": ["ux-review", "planning"],
-      "requires_approval": false
+      "next": [
+        "ux-review",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "ux-review": {
-      "description": "UX design review — user flows, component specs, accessibility, design system adherence",
+      "description": "UX design review \u00e2\u20ac\u201d user flows, component specs, accessibility, design system adherence",
       "agent": "ux-designer",
-      "extra_skills": ["accessibility"],
-      "next": ["devops-review", "planning"],
-      "requires_approval": false
+      "extra_skills": [
+        "accessibility"
+      ],
+      "next": [
+        "devops-review",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "devops-review": {
-      "description": "Operational readiness review — CI/CD, deployment strategy, secrets management, observability, migration safety",
+      "description": "Operational readiness review \u00e2\u20ac\u201d CI/CD, deployment strategy, secrets management, observability, migration safety",
       "agent": "devops-engineer",
-      "next": ["plan-approval", "planning"],
-      "requires_approval": false
+      "next": [
+        "plan-approval",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "plan-approval": {
-      "description": "Final plan gate — synthesize all specialist feedback, challenge assumptions, approve or block",
+      "description": "Final plan gate \u00e2\u20ac\u201d synthesize all specialist feedback, challenge assumptions, approve or block",
       "agent": "plan-reviewer",
-      "next": ["implementation", "planning"],
-      "requires_approval": true
+      "next": [
+        "implementation",
+        "planning",
+        "architecture-review",
+        "security-review",
+        "performance-review",
+        "ux-review",
+        "devops-review"
+      ],
+      "requires_approval": true,
+      "timeout_minutes": 10,
+      "approval_mode": "post"
     },
     "implementation": {
-      "description": "Code generation and implementation — implement only the scoped increment, all specialist review feedback must be addressed",
+      "description": "Code generation and implementation \u00e2\u20ac\u201d implement only the scoped increment, all specialist review feedback must be addressed",
       "agent": "builder",
-      "next": ["red-team-assessment", "planning"],
-      "requires_approval": false
+      "next": [
+        "red-team-assessment",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 30
     },
     "red-team-assessment": {
-      "description": "Adversarial post-implementation review — attack the code, hunt edge cases, probe failure modes",
+      "description": "Adversarial post-implementation review \u00e2\u20ac\u201d attack the code, hunt edge cases, probe failure modes",
       "agent": "red-team",
-      "next": ["performance-validation", "implementation"],
-      "requires_approval": false
+      "next": [
+        "performance-validation",
+        "implementation"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 20
     },
     "performance-validation": {
-      "description": "Post-implementation performance validation — benchmark, profile, verify against pre-implementation predictions",
+      "description": "Post-implementation performance validation \u00e2\u20ac\u201d benchmark, profile, verify against pre-implementation predictions",
       "agent": "performance-engineer",
-      "next": ["verification", "implementation"],
-      "requires_approval": false
+      "next": [
+        "verification",
+        "implementation"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 20
     },
     "verification": {
-      "description": "Final QA — run tests, check coverage, validate against acceptance criteria",
+      "description": "Final QA \u00e2\u20ac\u201d run tests, check coverage, validate against acceptance criteria",
       "agent": "reviewer",
-      "next": ["commit", "implementation"],
+      "next": [
+        "commit",
+        "implementation"
+      ],
       "requires_approval": false
     },
     "commit": {
       "description": "Stage changes and create a conventional commit",
       "agent": "git-ops",
-      "next": ["done", "implementation"],
+      "next": [
+        "done",
+        "implementation"
+      ],
       "requires_approval": true
     },
     "done": {
-      "description": "Increment complete — generate changelog entry, update docs, and note deferred increments",
+      "description": "Increment complete \u00e2\u20ac\u201d generate changelog entry, update docs, and note deferred increments",
       "agent": "tech-writer",
       "next": [],
-      "requires_approval": false
+      "requires_approval": false,
+      "timeout_minutes": 5
     }
   }
 }

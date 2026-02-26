@@ -1,53 +1,62 @@
 {
   "_comment": "Pi Chronicle project settings. Agents read this to understand your project conventions.",
-
   "project": {
     "name": "AdventureEngine",
-    "description": "Adventure Engine — a polyglot monorepo with .NET 9 backend and React frontend.",
+    "description": "Adventure Engine \u2014 a polyglot monorepo with .NET 10 backend and React frontend.",
     "language": "TypeScript, C#",
     "framework": "React, ASP.NET Core, .NET Aspire",
-    "runtime": "Node.js, .NET 9"
+    "runtime": "Node.js 22 LTS, .NET 10"
   },
-
   "architecture": {
     "pattern": "Vertical Slice Architecture wrapping Clean Architecture + DDD",
-    "notes": "Feature slices in apps/Api/Features/<Name>/. SharedKernel in packages/SharedKernel/. No MediatR. Dependencies: slices → SharedKernel only."
+    "notes": "Feature slices in apps/Api/Features/<Name>/. SharedKernel in packages/SharedKernel/. No MediatR. Dependencies: slices \u2192 SharedKernel only."
   },
-
   "development": {
     "tdd": true,
     "styleGuide": "airbnb",
     "linter": "eslint",
     "formatter": "prettier"
   },
-
   "testing": {
     "framework": "vitest, xunit",
     "e2e": "playwright",
     "coverageThreshold": 80,
     "testFilePattern": "**/*.test.ts, **/*Tests.cs"
   },
-
   "git": {
     "commitStyle": "conventional",
     "branchStrategy": "trunk",
     "defaultBranch": "main",
     "requirePR": false
   },
-
   "sprint": {
     "length_days": 10,
     "_comment_capacity": "Total story points the team can deliver per sprint. Default 8 = ~4 medium items or 8 small items.",
     "capacity_points": 8,
     "_comment_buffer": "Reserve this fraction of capacity for interruptions, bugs, and review. 0.2 = 20% buffer.",
     "buffer": 0.2,
-    "_comment_scale": "Point scale: small=1, medium=2, large=3. Never plan xl (5pt) items — break them down first.",
-    "point_scale": { "small": 1, "medium": 2, "large": 3, "xl": 5 }
+    "_comment_scale": "Point scale: small=1, medium=2, large=3. Never plan xl (5pt) items \u2014 break them down first.",
+    "point_scale": {
+      "small": 1,
+      "medium": 2,
+      "large": 3,
+      "xl": 5
+    }
   },
-
   "skills": {
-    "always": ["git"],
+    "always": [
+      "git"
+    ],
     "auto": true,
     "_comment_auto": "When true, auto-loads skills based on settings above (tdd, testing.framework, git.commitStyle, architecture.pattern)"
+  },
+  "chronicle": {
+    "artifacts": {
+      "_comment": "Canonical Chronicle artifact locations. Agents must not write duplicate planning/report files elsewhere.",
+      "backlog_path": ".pi/chronicle/backlog.json",
+      "sprint_plan_path": ".pi/chronicle/sprint-plan.md",
+      "reports_dir": ".pi/chronicle/artifacts/reports",
+      "temp_dir": ".pi/chronicle/artifacts/tmp"
+    }
   }
 }

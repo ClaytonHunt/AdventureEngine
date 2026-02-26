@@ -4,46 +4,69 @@
   "initial": "scope-review",
   "states": {
     "scope-review": {
-      "description": "MVP scoping gate — evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
+      "description": "MVP scoping gate \u00e2\u20ac\u201d evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
       "agent": "scope-reviewer",
-      "next": ["planning"],
-      "requires_approval": false
+      "next": [
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 10
     },
     "planning": {
-      "description": "Architecture planning and task breakdown — plan against the scoped increment, not the full original request",
+      "description": "Architecture planning and task breakdown \u00e2\u20ac\u201d plan against the scoped increment, not the full original request",
       "agent": "planner",
-      "next": ["implementation", "scope-review"],
-      "requires_approval": false
+      "next": [
+        "implementation",
+        "scope-review"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     },
     "implementation": {
-      "description": "Code generation and implementation — implement only the scoped increment",
+      "description": "Code generation and implementation \u00e2\u20ac\u201d implement only the scoped increment",
       "agent": "builder",
-      "next": ["red-team-assessment", "planning"],
-      "requires_approval": false
+      "next": [
+        "red-team-assessment",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 30
     },
     "red-team-assessment": {
-      "description": "Adversarial post-implementation review — attack the code, hunt edge cases, probe failure modes",
+      "description": "Adversarial post-implementation review \u00e2\u20ac\u201d attack the code, hunt edge cases, probe failure modes",
       "agent": "red-team",
-      "next": ["performance-validation", "implementation"],
-      "requires_approval": false
+      "next": [
+        "performance-validation",
+        "implementation"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 20
     },
     "performance-validation": {
-      "description": "Performance validation — profile the implementation, benchmark critical paths, verify no regressions",
+      "description": "Performance validation \u00e2\u20ac\u201d profile the implementation, benchmark critical paths, verify no regressions",
       "agent": "performance-engineer",
-      "next": ["verification", "implementation"],
-      "requires_approval": false
+      "next": [
+        "verification",
+        "implementation"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 20
     },
     "verification": {
       "description": "Testing, validation, and quality assurance",
       "agent": "reviewer",
-      "next": ["done", "implementation"],
+      "next": [
+        "done",
+        "implementation"
+      ],
       "requires_approval": false
     },
     "done": {
-      "description": "Increment complete — note deferred increments for the next session",
+      "description": "Increment complete \u00e2\u20ac\u201d note deferred increments for the next session",
       "agent": "documenter",
       "next": [],
-      "requires_approval": false
+      "requires_approval": false,
+      "timeout_minutes": 5
     }
   }
 }

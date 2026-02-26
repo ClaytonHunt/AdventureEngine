@@ -76,6 +76,26 @@ export const Disabled: Story = {
   },
 }
 
+export const Hover: Story = {
+  args: {
+    children: 'Hover state',
+    variant: 'primary',
+  },
+  parameters: {
+    pseudo: { hover: true },
+  },
+}
+
+export const FocusVisible: Story = {
+  args: {
+    children: 'Focus-visible state',
+    variant: 'primary',
+  },
+  parameters: {
+    pseudo: { focusVisible: true },
+  },
+}
+
 /**
  * All three sizes (sm, md, lg) rendered side by side for comparison.
  */
