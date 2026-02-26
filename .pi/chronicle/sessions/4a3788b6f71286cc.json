@@ -153,9 +153,9 @@
     }
   },
   "created": 1772114552576,
-  "lastUpdated": 1772118000142,
-  "currentState": "commit",
-  "currentStateTask": "Create the final broad conventional commit now using the curated working tree, including `.pi` changes (per policy), docs/extensions, and Sprint 4 implementation/test/verification artifacts. Stage all intended files currently in status and commit with a clear message reflecting Sprint 4 implementation + verification + curation. Return commit hash and concise file summary.",
+  "lastUpdated": 1772118049689,
+  "currentState": "done",
+  "currentStateTask": "Produce final completion summary for user: Sprint 4 implemented, verified, and committed. Include commit hash c9574f6, major delivered changes (CORS hardening + tests, minimatch/log-redaction/storybook/apphost verification scripts, Storybook state updates), note docs/extensions inclusion and `.pi` policy handling, and any deferred/non-blocking follow-ups (perf budget instrumentation hard gates).",
   "initialTask": "",
   "history": [
     {
@@ -625,6 +625,32 @@
       "taskGiven": "Execute final repository curation/staging prep now with strict policy: `.pi/**` is off-limits for deletion (either commit or leave untouched). Apply this checklist:\n1) Restore any deleted `.pi/**` tracked files if still deleted.\n2) Remove only noncritical temp/FYI files outside `.pi` (keep previous agreed deletions: scripts/sprint4-reset.mjs, docs/runbooks/sprint4-reset.md, SPRINT_PLANNING_HANDOFF.md).\n3) Keep docs and extensions changes.\n4) Keep durable Sprint 4 scripts: verify-apphost-port-smoke, verify-storybook-sprint4, verify-minimatch, verify-log-redaction.\n5) Evaluate root misc markdown files outside `.pi`; delete only obvious scratch/FYI, leave ambiguous files untouched.\n6) Output final grouped `git status --short` and explicit intended commit file list.\nDo not create commit in this step.",
       "outputPreview": "Completed. I executed final curation/staging prep under the `.pi/**` no-deletion policy.\n\n### What I did\n\n1. **Inspected working tree**\n   - Ran `git status --short` to identify current changes.\n2. **Checked `scripts/` contents**\n   - Confirmed only durable Sprint 4 verification scripts are present:",
       "exitCode": 0
+    },
+    {
+      "state": "commit",
+      "agentName": "git-ops",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772118000143,
+      "completedAt": 1772118021459,
+      "summary": "Repository curation is complete with `.pi/**` protected and intended broad change set finalized; proceeding to create final commit.",
+      "tokensUsed": 991,
+      "elapsed": 21316,
+      "taskGiven": "Create the final broad conventional commit now using the curated working tree, including `.pi` changes (per policy), docs/extensions, and Sprint 4 implementation/test/verification artifacts. Stage all intended files currently in status and commit with a clear message reflecting Sprint 4 implementation + verification + curation. Return commit hash and concise file summary.",
+      "outputPreview": "Completed — I created the final broad conventional commit with the curated working tree (including `.pi/**`, docs/extensions, and Sprint 4 implementation/test/verification artifacts).\n\n### Commit created\n- **Hash:** `c9574f6`\n- **Message:** `feat(sprint4): implement security gates and verification a",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "tech-writer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772118030861,
+      "completedAt": 1772118049689,
+      "summary": "Commit completed successfully with final broad curated change set including Sprint 4 implementation, verification automation, docs/extensions, and `.pi` artifacts.",
+      "tokensUsed": 9077,
+      "elapsed": 18828,
+      "taskGiven": "Produce final completion summary for user: Sprint 4 implemented, verified, and committed. Include commit hash c9574f6, major delivered changes (CORS hardening + tests, minimatch/log-redaction/storybook/apphost verification scripts, Storybook state updates), note docs/extensions inclusion and `.pi` policy handling, and any deferred/non-blocking follow-ups (perf budget instrumentation hard gates).",
+      "outputPreview": "## Sprint 4 Completion Summary (Implemented ✅ Verified ✅ Committed ✅)\n\nSprint 4 is complete and committed.\n\n### Commit\n- **Hash:** `c9574f6`\n- **Message:** `feat(sprint4): implement security gates and verification automation`\n\n---\n\n### What was delivered\n\n#### 1) CORS hardening + deterministic contr",
+      "exitCode": 0
     }
   ],
   "snapshot": {
@@ -757,7 +783,10 @@
       "Cleanup policy locked: `.pi/**` off-limits for deletion; preserve durable Sprint 4 verification assets, docs, and extensions.",
       "Final curation completed with `.pi/**` no-deletion policy honored; no additional deletions performed.",
       "Durable Sprint 4 scripts confirmed present in scripts/: verify-apphost-port-smoke, verify-log-redaction, verify-minimatch, verify-storybook-sprint4.",
-      "Current working tree is curated for broad commit including `.pi`, docs, extensions, Sprint 4 code/tests/scripts."
+      "Current working tree is curated for broad commit including `.pi`, docs, extensions, Sprint 4 code/tests/scripts.",
+      "Final broad conventional commit created successfully: c9574f6.",
+      "Commit message: feat(sprint4): implement security gates and verification automation.",
+      "Commit includes Sprint 4 code/tests/verification scripts plus docs/extensions and `.pi/**` artifacts per policy."
     ],
     "pendingTasks": [
       "In implementation, first recover exact requirements for items 019/015/018/008 from `.pi/chronicle/workflows/`, sessions, and docs.",
@@ -844,7 +873,8 @@
       "In implementation, execute final repository curation with `.pi` protected and remove only noncritical temp/FYI files outside `.pi`.",
       "Produce grouped final git status and intended commit file list, then proceed to commit.",
       "Proceed to commit state and create a conventional commit with the curated file set.",
-      "After commit, proceed to done state for final summary."
+      "After commit, proceed to done state for final summary.",
+      "Proceed to done state for final completion summary/documentation handoff."
     ],
     "custom": {}
   },
@@ -868,9 +898,10 @@
     "verification->commit": 1,
     "commit->implementation": 1,
     "implementation->planning": 1,
-    "implementation->commit": 1
+    "implementation->commit": 1,
+    "commit->done": 1
   },
-  "totalTokens": 255789,
-  "totalElapsed": 1388504,
-  "status": "running"
+  "totalTokens": 265857,
+  "totalElapsed": 1428648,
+  "status": "done"
 }

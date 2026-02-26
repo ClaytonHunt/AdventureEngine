@@ -68,3 +68,6 @@ test-results/
 
 # Test coverage output
 coverage/
+
+# Chronicle generated non-application artifacts (reports/temp scripts)
+.pi/chronicle/artifacts/

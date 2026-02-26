@@ -192,6 +192,14 @@ interface ProjectSettings {
 		always?: string[];   // skill names always loaded for every sub-agent
 		auto?: boolean;      // auto-map settings → skills
 	};
+	chronicle?: {
+		artifacts?: {
+			backlog_path?: string;
+			sprint_plan_path?: string;
+			reports_dir?: string;
+			temp_dir?: string;
+		};
+	};
 }
 
 /** Load .pi/project.json — returns null if missing or invalid */
@@ -206,6 +214,16 @@ function loadProjectSettings(cwd: string): ProjectSettings | null {
 	} catch {
 		return null;
 	}
+}
+
+function resolveChronicleArtifacts(settings: ProjectSettings | null | undefined) {
+	const a = settings?.chronicle?.artifacts;
+	return {
+		backlogPath: a?.backlog_path || ".pi/chronicle/backlog.json",
+		sprintPlanPath: a?.sprint_plan_path || ".pi/chronicle/sprint-plan.md",
+		reportsDir: a?.reports_dir || ".pi/chronicle/artifacts/reports",
+		tempDir: a?.temp_dir || ".pi/chronicle/artifacts/tmp",
+	};
 }
 
 /**
@@ -261,6 +279,14 @@ function buildProjectSettingsBlock(settings: ProjectSettings): string {
 		].filter(Boolean);
 		if (parts.length) lines.push(`**Git:** ${parts.join(", ")}`);
 	}
+
+	const paths = resolveChronicleArtifacts(settings);
+	lines.push("**Chronicle Artifacts (canonical paths):**");
+	lines.push(`- backlog: ${paths.backlogPath}`);
+	lines.push(`- sprint plan: ${paths.sprintPlanPath}`);
+	lines.push(`- reports: ${paths.reportsDir}`);
+	lines.push(`- temp: ${paths.tempDir}`);
+	lines.push("**File policy:** Never create duplicate backlog/sprint files elsewhere. Non-application reports/scripts must be written only under reports/temp directories above.");
 
 	return lines.join("\n");
 }
@@ -2047,6 +2073,7 @@ export default function (pi: ExtensionAPI) {
 			: "*(no agents found in .pi/agents/)*";
 
 		const snap = ledger.snapshot;
+		const artifacts = resolveChronicleArtifacts(projectSettings);
 
 		return {
 			systemPrompt: `You are the **Chronicle Supervisor** driving the workflow "${ledger.workflowName}".
@@ -2072,6 +2099,18 @@ ${snap.keyFindings.length ? `\n## Key Findings\n${snap.keyFindings.map(f => `- $
 
 ## Available Agents (loaded from .pi/agents/)
 ${agentCatalog}
+
+## Artifact Path Policy (STRICT)
+Canonical Chronicle artifact paths:
+- Backlog: \`${artifacts.backlogPath}\`
+- Sprint plan: \`${artifacts.sprintPlanPath}\`
+- Reports directory: \`${artifacts.reportsDir}\`
+- Temp directory: \`${artifacts.tempDir}\`
+
+Rules:
+- Never create duplicate backlog/sprint files in other locations (e.g. root-level \`backlog.json\` or \`sprint-plan.md\`).
+- Non-application reports, diagnostics, helper scripts, and temp outputs MUST be kept under reports/temp directories above.
+- If an agent proposes writing outside these paths for non-application artifacts, redirect it to the canonical directory.
 
 ## Your Tools
 - \`workflow_transition(to_state, task, summary)\`
@@ -2125,6 +2164,23 @@ ${agentCatalog}
 			projectSkillNames = resolveSkillPaths(allNames, cwd);
 		} else {
 			projectSkillNames = [];
+		}
+
+		const artifactPaths = resolveChronicleArtifacts(projectSettings);
+		mkdirSync(join(cwd, artifactPaths.reportsDir), { recursive: true });
+		mkdirSync(join(cwd, artifactPaths.tempDir), { recursive: true });
+
+		const dupes: string[] = [];
+		if (artifactPaths.backlogPath !== "backlog.json" && existsSync(join(cwd, "backlog.json"))) dupes.push("backlog.json");
+		if (artifactPaths.sprintPlanPath !== "sprint-plan.md" && existsSync(join(cwd, "sprint-plan.md"))) dupes.push("sprint-plan.md");
+		if (dupes.length) {
+			_ctx.ui.notify(
+				`⚠ Chronicle duplicate planning artifacts detected: ${dupes.join(", ")}\n` +
+				`Canonical paths are configured in .pi/project.json:\n` +
+				`- backlog: ${artifactPaths.backlogPath}\n` +
+				`- sprint plan: ${artifactPaths.sprintPlanPath}`,
+				"warning",
+			);
 		}
 
 		pi.setActiveTools(["workflow_transition", "workflow_update_snapshot", "workflow_status"]);

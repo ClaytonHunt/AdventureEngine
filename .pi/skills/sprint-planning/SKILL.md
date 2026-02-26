@@ -7,7 +7,15 @@ description: Sprint planning and backlog management — story point sizing, capa
 
 ## The Backlog File
 
-All work items are stored in `.pi/chronicle/backlog.json`. Every agent that creates, updates, or reads work items uses this file. **Always read this file before making changes.** Always write back the complete file — never partial updates.
+Canonical paths come from `.pi/project.json` → `chronicle.artifacts`:
+- `backlog_path` (default `.pi/chronicle/backlog.json`)
+- `sprint_plan_path` (default `.pi/chronicle/sprint-plan.md`)
+- `reports_dir` (default `.pi/chronicle/artifacts/reports`)
+- `temp_dir` (default `.pi/chronicle/artifacts/tmp`)
+
+Every agent that creates, updates, or reads work items must use the canonical backlog path. **Always read this file before making changes.** Always write back the complete file — never partial updates.
+
+Never create duplicate planning files in root (e.g., `backlog.json`, `sprint-plan.md`). Non-application reports/scripts/temp files must live under reports/temp directories.
 
 ### Schema
 
