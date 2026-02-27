@@ -1,5 +1,7 @@
 import '@/styles/reset.css'
 import '@/styles/tokens.css'
+import '@/components/Button.css'
+import { Button } from '@/components/Button'
 
 function App() {
   return (
@@ -22,6 +24,9 @@ function App() {
         <p style={{ color: 'var(--color-text-secondary)' }}>
           Sprint 2 scaffold — features coming in Sprint 3.
         </p>
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <Button>Try the Button</Button>
+        </div>
       </main>
       <footer
         style={{

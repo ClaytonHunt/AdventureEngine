@@ -25,11 +25,12 @@ const config: StorybookConfig = {
     name: getAbsolutePath('@storybook/react-vite') as '@storybook/react-vite',
     options: {},
   },
+  core: {
+    disableTelemetry: true,
+  },
   /**
    * item-008: Wire the @/ path alias from vite.config.ts into Storybook's Vite build.
    * This prevents import resolution failures in stories that use @/ imports.
-   * The try/catch ensures a malformed vite.config.ts causes a clear error message
-   * rather than an opaque Storybook crash.
    */
   viteFinal: async (config) => {
     try {
@@ -38,13 +39,20 @@ const config: StorybookConfig = {
         resolve: {
           alias: viteConfig.resolve?.alias ?? {},
         },
+        server: {
+          host: '127.0.0.1',
+        },
       })
-    } catch (err) {
-      console.error(
-        '[Storybook] Failed to import vite.config.ts for alias resolution.',
-        'The @/ alias will not be available in stories.',
-        err,
-      )
+    } catch {
+      // Sanitize CI/dev logging by not dumping raw error objects.
+      const message =
+        '[Storybook] Failed to import vite.config.ts for alias resolution. The @/ alias will not be available in stories.'
+
+      if (process.env['CI'] === 'true') {
+        throw new Error(message)
+      }
+
+      console.error(message)
       return config
     }
   },

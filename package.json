@@ -10,9 +10,10 @@
   "scripts": {
     "start": "dotnet run --project apps/AppHost",
     "test": "pnpm --filter web test",
-    "test:e2e": "echo 'E2E tests: add in Sprint 3'",
+    "test:e2e": "pnpm --filter web test:e2e",
     "test:api": "dotnet test AdventureEngine.slnx --no-build -c Release --logger trx --results-directory ./TestResults",
     "storybook": "pnpm --filter web storybook",
+    "build:storybook": "pnpm --filter web build-storybook",
     "build": "pnpm --filter web build",
     "sprint4:reset": "node scripts/sprint4-reset.mjs",
     "sprint4:reset:apply": "node scripts/sprint4-reset.mjs --apply",

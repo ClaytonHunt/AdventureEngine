@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-export default defineConfig([globalIgnores(['dist']), {
+export default defineConfig([globalIgnores(['dist', 'coverage', 'storybook-static', 'playwright-report', 'test-results']), {
   files: ['**/*.{ts,tsx}'],
   extends: [
     js.configs.recommended,
