@@ -52,9 +52,6 @@ jobs:
       - name: Install dependencies (frozen)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Restore AppHost .NET dependencies (linux RID, locked)
-        run: dotnet restore apps/AppHost/AdventureEngine.AppHost.csproj -r linux-x64 --locked-mode
-
       - name: Restore solution .NET dependencies (locked)
         run: dotnet restore AdventureEngine.slnx --locked-mode
 
