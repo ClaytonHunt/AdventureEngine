@@ -52,8 +52,20 @@ jobs:
       - name: Install dependencies (frozen)
         run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Restore solution .NET dependencies (locked)
-        run: dotnet restore AdventureEngine.slnx --locked-mode
+      - name: Restore Api .NET dependencies (locked)
+        run: dotnet restore apps/Api/AdventureEngine.Api.csproj --locked-mode
+
+      - name: Restore Api.Tests .NET dependencies (locked)
+        run: dotnet restore apps/Api.Tests/AdventureEngine.Api.Tests.csproj --locked-mode
+
+      - name: Restore SharedKernel .NET dependencies (locked)
+        run: dotnet restore packages/SharedKernel/AdventureEngine.SharedKernel.csproj --locked-mode
+
+      - name: Restore SharedKernel.Tests .NET dependencies (locked)
+        run: dotnet restore packages/SharedKernel.Tests/AdventureEngine.SharedKernel.Tests.csproj --locked-mode
+
+      - name: Restore ServiceDefaults .NET dependencies (locked)
+        run: dotnet restore packages/ServiceDefaults/AdventureEngine.ServiceDefaults.csproj --locked-mode
 
       - name: Build via canonical wrapper
         run: pnpm run ci:build
