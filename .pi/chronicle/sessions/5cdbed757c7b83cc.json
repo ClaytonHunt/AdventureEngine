@@ -164,9 +164,9 @@
     }
   },
   "created": 1772176236606,
-  "lastUpdated": 1772204098417,
-  "currentState": "implementation",
-  "currentStateTask": "Continue with item-016 closure execution using existing evidence tooling. Run `pnpm run collect:ci-timing-evidence` (with appropriate env overrides if needed) and attempt to populate real baseline/after GH Actions timing data. Update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md` with non-zero sample dataset, median, p90, deltas, and run links if available. If data is still unavailable, clearly document exact blocker and keep item-016 open. Keep scope limited to item-016 evidence/report closure.",
+  "lastUpdated": 1772206328772,
+  "currentState": "done",
+  "currentStateTask": "Summarize continuation progress: manual workflow trigger was added and committed to unblock Actions generation for item-016 evidence. Include commit hash, what remains blocked, and exact next user actions in GitHub UI to run baseline/after workflows and then finalize item-016 closure.",
   "initialTask": "",
   "history": [
     {
@@ -779,6 +779,58 @@
       "taskGiven": "Continue with item-016 closure execution using existing evidence tooling. Run `pnpm run collect:ci-timing-evidence` (with appropriate env overrides if needed) and attempt to populate real baseline/after GH Actions timing data. Update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md` with non-zero sample dataset, median, p90, deltas, and run links if available. If data is still unavailable, clearly document exact blocker and keep item-016 open. Keep scope limited to item-016 evidence/report closure.",
       "outputPreview": "Executed item-016 evidence collection now and validated output.\n\n## Command transcript (real)\n\n```bash\npnpm run collect:ci-timing-evidence\n```\n\nOutput:\n```text\n> adventure-engine@ collect:ci-timing-evidence D:\\projects\\AdventureEngine\n> node scripts/collect-ci-timing-evidence.mjs\n\nWrote D:\\projects\\",
       "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772205810158,
+      "completedAt": 1772205839535,
+      "summary": "User identified no GitHub Actions runs exist; adding manual trigger path so workflow can be executed and evidence can be collected.",
+      "tokensUsed": 799,
+      "elapsed": 29376,
+      "taskGiven": "Implement minimal change to make CI timing workflow runnable from GitHub UI even when no automatic runs exist. Update `.github/workflows/perf-budget-gate.yml` to include `workflow_dispatch` trigger while preserving existing security/performance hardening. Keep scope tight. Then validate workflow syntax statically if possible and report exact next user steps to run baseline/after samples in GitHub and unblock item-016 evidence collection.",
+      "outputPreview": "Implemented the requested minimal change: **`workflow_dispatch`** is now enabled for the CI timing workflow so it can be run manually from GitHub UI even when no automatic runs exist.\n\n### Files modified\n- `.github/workflows/perf-budget-gate.yml`\n\n### Key diff snippet\n```diff\non:\n+  workflow_dispatc",
+      "exitCode": 0
+    },
+    {
+      "state": "backlog-reconcile",
+      "agentName": "backlog-reconciler",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772205869271,
+      "completedAt": 1772205879444,
+      "summary": "Commit was blocked by workflow rule requiring backlog-reconcile first; routing for deterministic no-op reconciliation checkpoint.",
+      "tokensUsed": 11338,
+      "elapsed": 10173,
+      "taskGiven": "Reconcile canonical backlog after workflow-trigger tooling change. Expected: no status transitions (item-016 still in-progress pending real GH timing evidence). Confirm no backlog changes needed, then clear commit gate.",
+      "outputPreview": "### Applied transitions\n- None.\n\n### Unchanged items\n- `[item-001]` stayed `[in-sprint]` — `NO_MATCH` (not part of current verification evidence scope)\n- `[item-003]` stayed `[in-sprint]` — `NO_MATCH` (not part of current verification evidence scope)\n- `[item-017]` stayed `[in-sprint]` — `NO_MATCH` ",
+      "exitCode": 0
+    },
+    {
+      "state": "commit",
+      "agentName": "git-ops",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772206293915,
+      "completedAt": 1772206313383,
+      "summary": "Backlog no-op reconciliation confirmed item-016 remains in-progress; proceeding to commit workflow_dispatch trigger update.",
+      "tokensUsed": 694,
+      "elapsed": 19468,
+      "taskGiven": "Create scoped conventional commit for workflow trigger fix only: `.github/workflows/perf-budget-gate.yml` with added `workflow_dispatch` trigger. Exclude unrelated files/churn. This commit unblocks manual Actions runs needed for item-016 evidence collection.",
+      "outputPreview": "Done — I created the scoped commit for the workflow trigger fix only.\n\n### What I accomplished\n- Checked repo state with `git status` first.\n- Staged only:\n  - `.github/workflows/perf-budget-gate.yml`\n- Verified staged diff includes only adding:\n  - `workflow_dispatch:` under `on:`\n- Ran tests befor",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "tech-writer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772206317508,
+      "completedAt": 1772206328772,
+      "summary": "Committed manual trigger workflow fix in 73838bc to enable GitHub Actions runs for item-016 evidence collection.",
+      "tokensUsed": 7664,
+      "elapsed": 11264,
+      "taskGiven": "Summarize continuation progress: manual workflow trigger was added and committed to unblock Actions generation for item-016 evidence. Include commit hash, what remains blocked, and exact next user actions in GitHub UI to run baseline/after workflows and then finalize item-016 closure.",
+      "outputPreview": "## Continuation Progress Summary (Item-016 Unblock)\n\nManual triggering support was successfully added to the CI workflow and committed, so you can now generate the missing GitHub Actions timing runs required for item-016 closure.\n\n### ✅ What was accomplished\n- Added `workflow_dispatch` to:\n  - `.git",
+      "exitCode": 0
     }
   ],
   "snapshot": {
@@ -887,7 +939,12 @@
       "[Assist hop] Done -> Implementation: Workflow is terminal; user requested continuation to close last open item-016.",
       "Re-ran item-016 evidence collector (`pnpm run collect:ci-timing-evidence`) and dataset remains zero-sample for both baseline and after groups.",
       "No non-zero median/p90 or deltas available; item-016 closure gate remains blocked.",
-      "No report updates were made due to lack of valid GH Actions run data."
+      "No report updates were made due to lack of valid GH Actions run data.",
+      "[Assist hop] Implementation -> Implementation: User confirmed no GitHub Actions runs are visible; need to make workflow manually triggerable to generate evidence.",
+      "Added `workflow_dispatch` trigger to `.github/workflows/perf-budget-gate.yml` so workflow can be run manually from GitHub UI when no automatic runs exist.",
+      "Existing workflow hardening remains intact; change is minimal trigger expansion only.",
+      "Item-016 remains blocked until manual GitHub runs are executed and timing evidence is collected.",
+      "[Assist hop] Implementation -> Backlog Reconcile: Workflow guard requires reconciliation before commit; perform no-op status check for this tooling-only change."
     ],
     "pendingTasks": [
       "Run pre-implementation specialist review gates for this scoped sprint before coding.",
@@ -952,7 +1009,9 @@
       "Reconcile backlog to mark item-012 and item-013 done.",
       "Commit final residual closure changes and provide completion summary.",
       "Keep item-016 in-progress until successful `perf-budget-gate.yml` baseline/after runs exist.",
-      "Once GH runs exist, rerun collector (optionally with `ITEM016_AFTER_SHA`) and update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md`, then reconcile backlog to done."
+      "Once GH runs exist, rerun collector (optionally with `ITEM016_AFTER_SHA`) and update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md`, then reconcile backlog to done.",
+      "Commit workflow trigger change.",
+      "Run manual GitHub Actions baseline/after runs, then rerun timing collector and update item-016 evidence report/backlog status."
     ],
     "custom": {}
   },
@@ -972,17 +1031,18 @@
     "implementation->performance-validation": 1,
     "performance-validation->verification": 1,
     "verification->backlog-reconcile": 3,
-    "backlog-reconcile->commit": 4,
-    "commit->done": 4,
+    "backlog-reconcile->commit": 5,
+    "commit->done": 5,
     "done->planning": 2,
     "planning->implementation": 3,
     "implementation->verification": 3,
     "done->implementation": 2,
-    "implementation->implementation": 7,
+    "implementation->implementation": 8,
     "verification->verification": 6,
     "verification->implementation": 1,
     "implementation->planning": 2,
-    "planning->backlog-reconcile": 1
+    "planning->backlog-reconcile": 1,
+    "implementation->backlog-reconcile": 1
   },
   "issueTracker": {
     "openIssues": {
@@ -1027,6 +1087,13 @@
         "firstSeen": 1772204075572,
         "lastSeen": 1772204075572,
         "hits": 1
+      },
+      "no visible github actions runs; item-016 evidence pipeline cannot produce data until workflow executes": {
+        "id": "no visible github actions runs; item-016 evidence pipeline cannot produce data until workflow executes",
+        "title": "No visible GitHub Actions runs; item-016 evidence pipeline cannot produce data until workflow executes",
+        "firstSeen": 1772205810158,
+        "lastSeen": 1772205810158,
+        "hits": 1
       }
     },
     "resolvedIssueIds": [
@@ -1055,30 +1122,10 @@
       "stepwise verification execution for 012/013 closure",
       "need step 6+7 evidence to finalize closure decision for item-012/item-013"
     ],
-    "lastOpenHash": "implement item-012 to unblock final closure of item-013|need closure plan for remaining in-progress items 016 and 013|need dependency gate decision for item-013 vs item-012 before implementation|need execution plan to complete item-012 and close item-013|need final closure path for item-016 once gh timing data becomes available|need to close final open item-016 by attaching real gh actions timing evidence",
-    "stagnationCount": 0,
-    "lastProgressAt": 1772204075572,
+    "lastOpenHash": "implement item-012 to unblock final closure of item-013|need closure plan for remaining in-progress items 016 and 013|need dependency gate decision for item-013 vs item-012 before implementation|need execution plan to complete item-012 and close item-013|need final closure path for item-016 once gh timing data becomes available|need to close final open item-016 by attaching real gh actions timing evidence|no visible github actions runs; item-016 evidence pipeline cannot produce data until workflow executes",
+    "stagnationCount": 3,
+    "lastProgressAt": 1772205810158,
     "recentTransitions": [
-      {
-        "from": "verification",
-        "to": "verification",
-        "at": 1772201500633
-      },
-      {
-        "from": "verification",
-        "to": "implementation",
-        "at": 1772201520508
-      },
-      {
-        "from": "implementation",
-        "to": "implementation",
-        "at": 1772201537171
-      },
-      {
-        "from": "implementation",
-        "to": "implementation",
-        "at": 1772202751042
-      },
       {
         "from": "implementation",
         "to": "implementation",
@@ -1128,10 +1175,30 @@
         "from": "done",
         "to": "implementation",
         "at": 1772204075572
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772205810158
+      },
+      {
+        "from": "implementation",
+        "to": "backlog-reconcile",
+        "at": 1772205869270
+      },
+      {
+        "from": "backlog-reconcile",
+        "to": "commit",
+        "at": 1772205882811
+      },
+      {
+        "from": "commit",
+        "to": "done",
+        "at": 1772206317507
       }
     ]
   },
-  "totalTokens": 272688,
-  "totalElapsed": 5978922,
-  "status": "running"
+  "totalTokens": 293183,
+  "totalElapsed": 6049203,
+  "status": "done"
 }
