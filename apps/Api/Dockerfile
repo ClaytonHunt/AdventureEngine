@@ -3,6 +3,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+ENV NUGET_FALLBACK_PACKAGES="" \
+    RestoreDisableImplicitNuGetFallbackFolder=true
+
 # Copy solution and restore inputs first to maximize cache hits.
 COPY Directory.Build.props ./
 COPY Directory.Packages.props ./
@@ -11,7 +14,10 @@ COPY apps/Api/AdventureEngine.Api.csproj apps/Api/
 COPY packages/SharedKernel/AdventureEngine.SharedKernel.csproj packages/SharedKernel/
 COPY packages/ServiceDefaults/AdventureEngine.ServiceDefaults.csproj packages/ServiceDefaults/
 
-RUN dotnet restore apps/Api/AdventureEngine.Api.csproj --locked-mode
+RUN dotnet restore apps/Api/AdventureEngine.Api.csproj --locked-mode \
+    /p:DisableImplicitNuGetFallbackFolder=true \
+    /p:RestoreFallbackFolders="" \
+    /p:RestoreAdditionalProjectFallbackFolders=""
 
 # Copy the rest of source after restore layer.
 COPY apps/Api/ apps/Api/
@@ -21,7 +27,10 @@ COPY packages/ServiceDefaults/ packages/ServiceDefaults/
 RUN dotnet publish apps/Api/AdventureEngine.Api.csproj \
     -c Release \
     -o /app/publish \
-    --no-restore
+    /p:DisableImplicitNuGetFallbackFolder=true \
+    /p:RestoreFallbackFolders="" \
+    /p:RestoreAdditionalProjectFallbackFolders="" \
+    /p:NuGetPackageFolders=/root/.nuget/packages
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
