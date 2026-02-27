@@ -56,7 +56,7 @@
       "description": "Testing, validation, and quality assurance",
       "agent": "reviewer",
       "next": [
-        "done",
+        "backlog-reconcile",
         "implementation"
       ],
       "requires_approval": false
@@ -67,6 +67,17 @@
       "next": [],
       "requires_approval": false,
       "timeout_minutes": 5
+    },
+    "backlog-reconcile": {
+      "description": "Reconcile canonical backlog statuses after verification evidence. Mark completed in-sprint items done, keep partials in-progress/in-sprint with explicit residual notes.",
+      "agent": "backlog-reconciler",
+      "next": [
+        "done",
+        "implementation",
+        "planning"
+      ],
+      "requires_approval": false,
+      "timeout_minutes": 15
     }
   }
 }

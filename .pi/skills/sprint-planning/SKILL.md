@@ -199,3 +199,22 @@ Item 2: [feature] Implement X based on spike findings (medium, 2pt)
 - **Deferred items** must have a `notes` field explaining why they were deferred
 - **Cancelled items** stay in the file (for history) but are excluded from all planning
 - **Done items** stay in the file (for history) and count toward velocity tracking
+
+---
+
+## Completion Reconciliation Rules (Post-Verification)
+
+When reconciling backlog status after verification:
+
+1. Candidate statuses are only: `in-sprint`, `in-progress`
+2. Mark `done` only with explicit pass evidence tied to the item/acceptance criteria
+3. If evidence is partial or ambiguous, keep `in-progress` (or `in-sprint`) and record why
+4. Never infer completion from plans/intentions; require verification output
+5. Never change unrelated backlog fields during reconciliation
+
+Allowed transitions during reconciliation:
+- `in-sprint -> done`
+- `in-progress -> done`
+- `in-sprint -> in-progress`
+- unchanged (when insufficient evidence)
+

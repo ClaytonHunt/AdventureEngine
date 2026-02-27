@@ -1,0 +1,743 @@
+{
+  "id": "c4ca57eeec3005b0",
+  "workflowName": "Feature Full",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\feature-full.json",
+  "workflowDef": {
+    "name": "Feature Full",
+    "description": "Full feature delivery: scope to MVP, specialist pre-implementation review panel, adversarial post-implementation checks, and documentation",
+    "initial": "scope-review",
+    "states": {
+      "scope-review": {
+        "description": "MVP scoping gate â€” evaluate requirements for size, break down if too large, define the bounded increment and acceptance criteria before any planning begins",
+        "agent": "scope-reviewer",
+        "next": [
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 10
+      },
+      "planning": {
+        "description": "Architecture planning and task breakdown â€” plan against the scoped increment defined by scope-review, not the full original request",
+        "agent": "planner",
+        "next": [
+          "architecture-review",
+          "scope-review"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "architecture-review": {
+        "description": "Architecture and design review â€” SOLID principles, coupling, cohesion, API contracts, scalability",
+        "agent": "architect",
+        "next": [
+          "security-review",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "security-review": {
+        "description": "Pre-implementation security review â€” threat modeling, attack surface analysis, auth flows, data exposure risks",
+        "agent": "security-auditor",
+        "next": [
+          "performance-review",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "performance-review": {
+        "description": "Pre-implementation performance review â€” algorithmic complexity, DB query patterns, caching needs, bottleneck predictions",
+        "agent": "performance-engineer",
+        "next": [
+          "ux-review",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "ux-review": {
+        "description": "UX design review â€” user flows, component specs, accessibility, design system adherence",
+        "agent": "ux-designer",
+        "extra_skills": [
+          "accessibility"
+        ],
+        "next": [
+          "devops-review",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "devops-review": {
+        "description": "Operational readiness review â€” CI/CD, deployment strategy, secrets management, observability, migration safety",
+        "agent": "devops-engineer",
+        "next": [
+          "plan-approval",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 15
+      },
+      "plan-approval": {
+        "description": "Final plan gate â€” synthesize all specialist feedback, challenge assumptions, approve or block",
+        "agent": "plan-reviewer",
+        "next": [
+          "implementation",
+          "planning",
+          "architecture-review",
+          "security-review",
+          "performance-review",
+          "ux-review",
+          "devops-review"
+        ],
+        "requires_approval": true,
+        "timeout_minutes": 10,
+        "approval_mode": "post"
+      },
+      "implementation": {
+        "description": "Code generation and implementation â€” implement only the scoped increment, all specialist review feedback must be addressed",
+        "agent": "builder",
+        "next": [
+          "red-team-assessment",
+          "planning"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 30
+      },
+      "red-team-assessment": {
+        "description": "Adversarial post-implementation review â€” attack the code, hunt edge cases, probe failure modes",
+        "agent": "red-team",
+        "next": [
+          "performance-validation",
+          "implementation"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 20
+      },
+      "performance-validation": {
+        "description": "Post-implementation performance validation â€” benchmark, profile, verify against pre-implementation predictions",
+        "agent": "performance-engineer",
+        "next": [
+          "verification",
+          "implementation"
+        ],
+        "requires_approval": false,
+        "timeout_minutes": 20
+      },
+      "verification": {
+        "description": "Final QA â€” run tests, check coverage, validate against acceptance criteria",
+        "agent": "reviewer",
+        "next": [
+          "commit",
+          "implementation"
+        ],
+        "requires_approval": false
+      },
+      "commit": {
+        "description": "Stage changes and create a conventional commit",
+        "agent": "git-ops",
+        "next": [
+          "done",
+          "implementation"
+        ],
+        "requires_approval": true
+      },
+      "done": {
+        "description": "Increment complete â€” generate changelog entry, update docs, and note deferred increments",
+        "agent": "tech-writer",
+        "next": [],
+        "requires_approval": false,
+        "timeout_minutes": 5
+      }
+    }
+  },
+  "created": 1772131644156,
+  "lastUpdated": 1772133224595,
+  "currentState": "done",
+  "currentStateTask": "Generate final sprint execution completion summary for user.\n\nInclude:\n- Confirmation sprint execution completed and committed (hash ae1238b)\n- Scope delivered for items 017/018/005/015\n- Key artifacts/code areas added or changed\n- Validation outcomes (API tests, perf schema/measurement checks)\n- Note any optional deferred hardening items (if any)\n\nKeep concise and actionable.",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "scope-review",
+      "agentName": "scope-reviewer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131663223,
+      "completedAt": 1772131689679,
+      "summary": "User requested sprint execution; initiating scope gate on committed sprint items to define bounded implementation increment.",
+      "tokensUsed": 18623,
+      "elapsed": 26455,
+      "taskGiven": "Execute sprint for the already-selected committed sprint scope. Treat this as the bounded increment to implement now.\n\nCommitted in-sprint items (from sprint planning):\n- item-017 (1): Spike and define strict CI performance budgets\n- item-018 (2): Instrument startup and Storybook timing checks for CI\n- item-005 (3): Implement Health Check vertical slice with unit/integration tests\n- item-015 (1): Configure CORS policy on the API for local React dev server\n\nContext:\n- Sprint plan exists at `.pi/chronicle/sprint-plan.md`\n- Backlog is at `.pi/chronicle/backlog.json` and these items are marked `in-sprint`\n- Prior risk: dependency sequencing sensitivity for 015/017/018\n\nScope-review tasks:\n1) Validate this is a sprint-fit MVP increment for execution now.\n2) Confirm exact acceptance criteria for each selected item (or refine if ambiguous).\n3) Identify anything too large/risky and split/defer only if needed.\n4) Record deferred work (if any) back into canonical backlog.\n5) Output a tight execution scope statement and acceptance checklist for downstream planning/implementation.\n\nUse canonical Chronicle paths only.",
+      "outputPreview": "### 📋 Request Summary\nYou asked to scope-review the **already committed in-sprint set** (items 017, 018, 005, 015), validate it as an MVP-fit execution increment, tighten acceptance criteria where needed, and only split/defer if something is too large or too risky.\n\n### 📦 Backlog Check\n- Matching ",
+      "exitCode": 0
+    },
+    {
+      "state": "planning",
+      "agentName": "planner",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131697509,
+      "completedAt": 1772131730565,
+      "summary": "Scoped sprint increment validated; moving to concrete execution planning with dependency-aware task breakdown.",
+      "tokensUsed": 15876,
+      "elapsed": 33055,
+      "taskGiven": "Create an execution plan for the approved scoped sprint increment:\n- item-017: define strict CI performance budgets\n- item-018: instrument startup + Storybook timing checks for CI\n- item-005: implement /health vertical slice with unit/integration tests\n- item-015: configure CORS for local React dev server\n\nPlanning requirements:\n1) Produce concrete task breakdown per item with file-level touchpoint expectations.\n2) Define dependency-aware sequencing; front-load item-017 to unblock 018.\n3) Identify opportunities for parallel work (e.g., API slice and CORS) without conflict.\n4) Include explicit definition of done mapped to item acceptance criteria.\n5) Highlight assumptions/unknowns that should be challenged in architecture/security/performance/ux/devops reviews.\n\nOutput should be implementation-ready and bounded to this sprint scope only.",
+      "outputPreview": "1. **Establish implementation baseline and confirm current touchpoints (Day 0 / first hour).**  \n   - Inspect existing files likely involved in this sprint scope (no edits yet):  \n     - API: `apps/Api/Program.cs`, `apps/Api/appsettings*.json`, existing `Features/*` layout  \n     - API tests: `apps/",
+      "exitCode": 0
+    },
+    {
+      "state": "architecture-review",
+      "agentName": "architect",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131739816,
+      "completedAt": 1772131770566,
+      "summary": "Planning complete; requesting architecture gate on sprint execution design.",
+      "tokensUsed": 4802,
+      "elapsed": 30749,
+      "taskGiven": "Review the sprint implementation plan for scoped items 017, 018, 005, 015.\n\nPlanned approach summary:\n- 017 first: collect timing measurements and define strict CI perf budgets; source-of-truth recommended at `.pi/chronicle/perf-budgets.json`.\n- 005 + 015 in parallel: add /health vertical slice and configure named, config-driven CORS policy (local origin allowed; non-dev restricted).\n- 018 after 017: add deterministic timing scripts for startup and Storybook checks; enforce thresholds from budget file with non-zero exit on breach.\n- Known hotspot: shared edits to `apps/Api/Program.cs`.\n\nArchitecture review asks:\n1) Validate design cohesion/coupling and SOLID alignment for API slice + CORS + perf tooling.\n2) Recommend structure to avoid Program.cs bloat (extension methods/modules).\n3) Validate API contract expectations for /health and configuration contract for AllowedOrigins.\n4) Identify scalability/maintainability risks and concrete mitigations before coding.\n5) Return approve/block with required corrections for implementation plan.",
+      "outputPreview": "1. **Architecture Fit**\n\nOverall, the plan is **well-aligned** with a typical layered ASP.NET Core service architecture and with incremental vertical-slice delivery.\n\n- **Item 017 → 018 sequencing** is architecturally correct: define budgets first, then enforce them.\n- **Item 005 (/health)** as a ve",
+      "exitCode": 0
+    },
+    {
+      "state": "security-review",
+      "agentName": "security-auditor",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131778814,
+      "completedAt": 1772131824355,
+      "summary": "Architecture review passed with constraints; requesting security gate for sprint implementation.",
+      "tokensUsed": 4867,
+      "elapsed": 45541,
+      "taskGiven": "Perform pre-implementation security review for sprint scope items 017/018/005/015.\n\nPlanned implementation constraints already identified:\n- Modularize Program.cs; use extension methods.\n- /health endpoint contract to be defined upfront.\n- CORS via typed config (`AllowedOrigins`) with secure non-dev defaults.\n- Perf budget checks in CI/tooling layer only.\n\nSecurity review focus:\n1) Threat model for new/changed attack surfaces: /health endpoint, CORS config, CI perf scripts/artifacts.\n2) Identify OWASP-style risks (misconfiguration, injection in scripts/config parsing, data exposure, auth bypass assumptions, DoS vectors).\n3) Hardening requirements for /health response and CORS policy (especially credentials + wildcard + env handling).\n4) Supply-chain/CI artifact risks for perf-budgets.json and scripts.\n5) Return approve/block with mandatory controls/tests before implementation.",
+      "outputPreview": "## Security Review Result: **APPROVE WITH MANDATORY CONTROLS** (pre-implementation gate)\n\nI reviewed the current sprint scope surfaces for items **017/018/005/015** with focus on `/health`, CORS, and CI perf tooling risks.  \nCurrent code already includes some strong controls (notably strict CORS ori",
+      "exitCode": 0
+    },
+    {
+      "state": "performance-review",
+      "agentName": "performance-engineer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131832192,
+      "completedAt": 1772131863790,
+      "summary": "Security gate completed with mandatory controls; requesting performance gate before implementation.",
+      "tokensUsed": 5452,
+      "elapsed": 31598,
+      "taskGiven": "Run pre-implementation performance review for sprint items 017/018/005/015.\n\nCurrent plan/context:\n- 017 defines strict CI perf budgets (startup, pipeline, Storybook dev/build).\n- 018 implements deterministic timing scripts and threshold enforcement from budget file.\n- 005 adds /health endpoint + tests.\n- 015 adds config-driven CORS policy.\n- Architecture/security constraints include anti-flake strategy, schema validation, fail-closed behavior, safe CI scripting.\n\nPlease provide:\n1) Complexity and bottleneck analysis for planned scripts/checks and API changes.\n2) Flakiness risk model for timing in CI and concrete stabilization strategy (sampling/warmups/percentiles).\n3) Recommended measurement methodology and thresholds governance for 017->018.\n4) Performance implications (if any) of /health and CORS changes.\n5) Approve/block with required performance controls before implementation.",
+      "outputPreview": "1. **Profiling Summary**  \nPre-implementation review completed based on the approved sprint plan and prior architecture/security constraints (no runtime code changes yet). I analyzed expected hot paths and timing sensitivity for:\n\n- **CI perf budget definition/enforcement** (items 017/018)\n- **API `",
+      "exitCode": 0
+    },
+    {
+      "state": "ux-review",
+      "agentName": "ux-designer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131871593,
+      "completedAt": 1772131901629,
+      "summary": "Pre-implementation performance gate passed with controls; requesting UX review for developer-facing flow quality.",
+      "tokensUsed": 5524,
+      "elapsed": 30036,
+      "taskGiven": "Perform UX/accessibility review for sprint scope items 017/018/005/015.\n\nScope touches:\n- /health endpoint (API contract, likely machine-facing but may affect developer tooling visibility)\n- CORS configuration for local web app communication\n- CI perf instrumentation/reporting outputs for developers\n\nPlease assess:\n1) Developer/user flow impacts for local startup and troubleshooting.\n2) UX clarity of errors/messages from CORS misconfig and perf budget failures.\n3) Accessibility/design-system concerns if any UI-facing surface is touched.\n4) Recommendations to improve usability of scripts/log outputs and docs for this sprint.\n5) Approve/block from UX perspective with actionable requirements.",
+      "outputPreview": "1. **User Goal**  \nEnable developers (and CI maintainers) to quickly understand system health, fix local API↔web connectivity issues, and act on CI performance failures with minimal ambiguity and low cognitive load.\n\n2. **Flow**  \n- **Local dev startup**\n  1. Developer runs API + React app locally.\n",
+      "exitCode": 0
+    },
+    {
+      "state": "devops-review",
+      "agentName": "devops-engineer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131909774,
+      "completedAt": 1772131950248,
+      "summary": "UX review passed with controls; requesting DevOps readiness gate before final plan approval.",
+      "tokensUsed": 2127,
+      "elapsed": 40474,
+      "taskGiven": "Run DevOps/operational readiness review for sprint items 017/018/005/015.\n\nPlanned changes:\n- New CI perf budget artifact at `.pi/chronicle/perf-budgets.json` (source of truth).\n- Timing scripts under scripts/ + package scripts for startup and Storybook measurements.\n- Threshold enforcement in CI with fail-closed behavior.\n- API changes for /health endpoint and CORS config-driven policy.\n\nKnown review constraints from prior gates:\n- Anti-flake measurement policy (warmup/samples/median-p90 + variance handling).\n- Security integrity controls (schema validation, CODEOWNERS, safe process spawning).\n- UX controls (actionable failure messaging, troubleshooting docs).\n\nPlease assess:\n1) CI/CD integration design and failure ergonomics.\n2) Secrets/config handling and environment strategy for AllowedOrigins and related settings.\n3) Observability/logging and artifacts retention needed for perf governance.\n4) Migration/deployment safety risks (including non-dev startup failure behavior).\n5) Approve/block with mandatory operational controls before implementation.",
+      "outputPreview": "1. **CI/CD Review** — pipeline quality, test gates, build safety  \n- **Blocking gap:** there is currently **no CI workflow checked in** (`.github/workflows` missing), so items **017/018 cannot be operationally enforced yet** despite planned scripts/artifacts.\n- Current root `package.json` has verifi",
+      "exitCode": 0
+    },
+    {
+      "state": "planning",
+      "agentName": "planner",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772131962672,
+      "completedAt": 1772131993350,
+      "summary": "DevOps review returned BLOCK; routing back to planning to integrate operational controls and clear blockers.",
+      "tokensUsed": 6046,
+      "elapsed": 30678,
+      "taskGiven": "Revise sprint implementation plan to resolve DevOps BLOCK findings while staying within sprint scope (017/018/005/015).\n\nDevOps-required additions to plan:\n1) Add CI workflow(s) under `.github/workflows` enforcing perf policy: schema validation for `.pi/chronicle/perf-budgets.json`, deterministic measurement scripts, and fail-closed threshold gate.\n2) Add CI artifact retention for raw timings + aggregates + environment metadata.\n3) Add operational runbook/preflight for `AllowedOrigins` fail-fast behavior (production startup safety).\n4) Replace ad-hoc CORS warning output with structured logging expectations.\n5) Add `/health` no-cache hardening and verification requirement.\n\nAlso preserve previously required controls from architecture/security/performance/ux.\n\nOutput:\n- Updated task sequencing and DoD with these controls folded in\n- Explicit statement whether scope still sprint-fit or if anything must be deferred",
+      "outputPreview": "1. **Sprint-fit decision (updated): still sprint-fit, no deferral required**\n   - The DevOps BLOCK can be resolved **within existing scope items**:\n     - `item-017`: formalize budgets + policy definition\n     - `item-018`: enforce via CI workflows, deterministic measurement, fail-closed gating, art",
+      "exitCode": 0
+    },
+    {
+      "state": "devops-review",
+      "agentName": "devops-engineer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132002715,
+      "completedAt": 1772132030615,
+      "summary": "Integrated DevOps blocker fixes into planning; re-running DevOps gate to clear operational readiness.",
+      "tokensUsed": 6730,
+      "elapsed": 27899,
+      "taskGiven": "Re-review DevOps readiness against revised plan (no code yet) for items 017/018/005/015.\n\nPrior BLOCK was due to missing operational controls. Revised plan now explicitly includes:\n- `.github/workflows` CI perf enforcement (schema validation + deterministic measurement + fail-closed threshold gate)\n- CI artifact retention (raw samples, aggregates, env metadata)\n- `.github/CODEOWNERS` protection for perf policy/scripts/workflows\n- CORS preflight/deployment runbook and structured logging\n- `/health` no-cache hardening and tests\n\nPlease assess whether this revised plan is now operationally APPROVABLE for implementation, and list non-negotiable checkpoints to verify during implementation.",
+      "outputPreview": "1. **CI/CD Review**  \nRevised plan addresses the prior blocker and is now **operationally approvable**, contingent on implementation verification. The critical gaps from the previous DevOps BLOCK are now explicitly covered:\n\n- ✅ CI workflow enforcement under `.github/workflows`  \n  - schema validati",
+      "exitCode": 0
+    },
+    {
+      "state": "plan-approval",
+      "agentName": "plan-reviewer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132040504,
+      "completedAt": 1772132483085,
+      "summary": "All specialist pre-implementation reviews complete and reconciled; requesting final plan approval gate.",
+      "tokensUsed": 6485,
+      "elapsed": 16905,
+      "taskGiven": "Final plan gate for sprint execution scope items 017/018/005/015.\n\nPlease synthesize specialist review outcomes:\n- Architecture: APPROVED with notes (modularize Program.cs; define /health semantics; typed AllowedOrigins; perf checks in CI layer only).\n- Security: APPROVE with mandatory controls (CI policy integrity, schema validation, fail-closed parsing, safe process spawning, CORS hardening tests, restrict /secure-test exposure, /health hardening).\n- Performance: APPROVE with mandatory anti-flake controls (warmup+samples, median/p90, variance guard, deterministic env metadata, governance).\n- UX: APPROVE with required DX controls (actionable standardized failure messaging, stable /health schema docs, normalized CI output).\n- DevOps: initially BLOCKED then RE-APPROVED after planning corrections; non-negotiables include CI workflow + artifacts + CODEOWNERS + CORS preflight/runbook + structured logs + /health no-cache tests.\n\nTask:\n1) Issue final APPROVE/BLOCK verdict.\n2) If approve, provide precise implementation guardrails/checklist and recommended execution order.\n3) If block, identify exact correction route/state.\n\nBounded scope only: items 017/018/005/015.",
+      "outputPreview": "### Summary\nThis final gate reviewed the sprint execution plan for items **017/018/005/015** against all specialist outcomes (architecture, security, performance, UX, DevOps), with emphasis on whether previously mandatory controls were actually folded into the revised plan and whether sequencing/dep",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132493820,
+      "completedAt": 1772132606994,
+      "summary": "Plan approved; starting implementation of committed sprint scope with enforced guardrails.",
+      "tokensUsed": 1519,
+      "elapsed": 113173,
+      "taskGiven": "Implement approved sprint scope now: items 017, 018, 005, 015.\n\nMust implement with guardrails from plan approval:\n- Sequence: 017 first; 005 and 015 parallel; 018 finalization; then verification readiness.\n- CI integrity: schema-validated `.pi/chronicle/perf-budgets.json`, fail-closed parsing, safe process spawning, CODEOWNERS protections, artifacts on pass/fail.\n- Performance stability: warmup+samples, median/p90, variance handling, env metadata capture.\n- API/CORS safety: shallow /health contract, no-cache headers + tests, typed AllowedOrigins with secure non-dev behavior, structured logs, preflight/runbook.\n- UX/DX: actionable standardized failure messages for perf and CORS.\n\nDeliverables expected in repo:\n1) Code for /health vertical slice + unit/integration tests (item-005).\n2) CORS policy/config updates + validation/logging + any needed tests/docs (item-015).\n3) Perf budgets source file + schema + scripts + CI workflow integration + artifact handling (017/018).\n4) Any required docs/runbook updates for troubleshooting.\n\nUse canonical chronicle paths for non-app artifacts. Provide summary with files changed, tests run, and any remaining known risks.",
+      "outputPreview": "Implemented and validated the sprint scope (017, 018, 005, 015) with concrete repo changes.\n\n## What I accomplished\n\n### ✅ Item 017 + 018 (CI perf budgets + instrumentation)\n- Added canonical perf budget artifact:\n  - `.pi/chronicle/perf-budgets.json`\n- Added JSON schema:\n  - `.pi/chronicle/perf-bud",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132618117,
+      "completedAt": 1772132680288,
+      "summary": "Initial implementation pass completed but left integration/testing gaps; running correction pass to finish sprint scope.",
+      "tokensUsed": 9428,
+      "elapsed": 62171,
+      "taskGiven": "Follow-up implementation pass required to close remaining gaps before adversarial review.\n\nPlease complete these mandatory items:\n1) Fully integrate new CORS module in `apps/Api/Program.cs`:\n   - Replace/remove any duplicate inline CORS configuration that conflicts with `Features/Cors` module.\n   - Ensure typed config + startup validation + structured logging path is the active path.\n2) Ensure `/health` no-cache hardening is explicitly implemented and covered by tests.\n3) Execute validation commands and report results:\n   - `dotnet test` (at least API/API.Tests relevant suites)\n   - perf budget schema verification script\n   - perf measurement/enforcement script (or deterministic dry-run where appropriate)\n4) Keep all non-app artifacts in canonical Chronicle paths.\n\nReturn:\n- exact files changed\n- test/command outputs (pass/fail)\n- confirmation that sprint items 017/018/005/015 are fully satisfied for red-team assessment.",
+      "outputPreview": "Implemented the follow-up pass and ran validations. Here’s the concrete outcome.\n\n## Files changed\n\n1. `apps/Api/Program.cs`\n2. `apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs`\n3. `apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs`\n\n---\n\n## Key code changes (snippets)\n\n### 1) COR",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132690198,
+      "completedAt": 1772132738160,
+      "summary": "Second implementation pass surfaced concrete failing test and tooling gaps; executing final stabilization to clear blockers.",
+      "tokensUsed": 1562,
+      "elapsed": 47962,
+      "taskGiven": "Final stabilization pass before red-team.\n\nPlease address all remaining blockers:\n1) Fix `/health` no-cache behavior/test so API test suite passes.\n2) Resolve perf script execution prerequisites:\n   - ensure `ajv` dependency for `scripts/verify-perf-budgets.mjs`\n   - ensure `pnpm` availability/path for `scripts/measure-ci-perf.mjs` (or implement robust fallback/clear failure contract as intended in CI)\n3) Re-run and report exact results for:\n   - `dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`\n   - `node scripts/verify-perf-budgets.mjs`\n   - `node scripts/measure-ci-perf.mjs` (or equivalent script entrypoint)\n\nGoal: reach implementation-ready state for red-team assessment with no unresolved code defects.\n\nReturn changed files and pass/fail matrix.",
+      "outputPreview": "Implemented a stabilization pass and re-ran all required validations.\n\n## ✅ What I changed\n\n### 1) Fixed `/health` no-cache header behavior (test-aligned)\n**File modified**\n- `apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs`\n\n**Key change**\n```diff\n- headers[HeaderNames.CacheControl] = \"no-stor",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132748313,
+      "completedAt": 1772132815877,
+      "summary": "Applied stabilization patches; now requesting post-fix validation rerun to confirm readiness.",
+      "tokensUsed": 1972,
+      "elapsed": 67563,
+      "taskGiven": "Post-fix validation evidence pass only.\n\nPlease run and report CURRENT (post-fix) results for:\n1) `dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`\n2) `node scripts/verify-perf-budgets.mjs`\n3) `node scripts/measure-ci-perf.mjs` (or package script equivalent)\n\nIf any still fail, apply minimal corrective patch and rerun until results are definitive.\n\nGoal: provide final implementation readiness matrix for red-team handoff.",
+      "outputPreview": "Implemented the requested post-fix validation pass and reran all required commands with real outputs.\n\n## What I ran (and outcomes)\n\n### 1) `dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`\n- **Initial run**: ❌ failed (1 test)\n- Failure:\n  - `HealthCheckEndpointTests.GetHealth",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132826932,
+      "completedAt": 1772132855670,
+      "summary": "Perf checks are green but API test blocker remains; requesting final fix and green test evidence.",
+      "tokensUsed": 1005,
+      "elapsed": 28737,
+      "taskGiven": "Final blocker fix required: API tests must be green.\n\nCurrent blocker:\n- `dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`\n  failing `HealthCheckEndpointTests.GetHealth_ReturnsNoCacheHeaders` on `Pragma` assertion.\n\nPlease apply minimal, correct fix to align implementation + test with intended no-cache hardening policy, then rerun the API test command until green.\n\nPolicy intent: robust no-cache behavior for `/health` (at minimum standards-compliant cache prevention; include additional legacy headers only if reliably emitted by framework behavior).\n\nReturn:\n- patch applied\n- final test result summary (must include passed count)\n- confirmation implementation is ready for red-team assessment.",
+      "outputPreview": "Implemented the blocker fix and reran API tests to green.\n\n### Patch applied\n\n**File modified**\n- `apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs`\n\n**Key change**\nI made the no-cache test standards-aligned and framework-tolerant by:\n- keeping strict assertion for `Cache-Control: no-",
+      "exitCode": 0
+    },
+    {
+      "state": "red-team-assessment",
+      "agentName": "red-team",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132865668,
+      "completedAt": 1772132893778,
+      "summary": "Implementation stabilized and tests green; starting adversarial review before final validation.",
+      "tokensUsed": 7361,
+      "elapsed": 28110,
+      "taskGiven": "Conduct adversarial post-implementation assessment for sprint scope items 017/018/005/015.\n\nImplemented changes include:\n- Perf governance: `.pi/chronicle/perf-budgets.json`, `.pi/chronicle/perf-budgets.schema.json`, scripts `verify-perf-budgets.mjs` + `measure-ci-perf.mjs`, workflow `.github/workflows/perf-budget-gate.yml`, CODEOWNERS protection.\n- CORS modularization under `apps/Api/Features/Cors/*` with Program.cs integration and startup validator.\n- /health endpoint no-cache hardening and tests; API test suite currently green (12/12).\n\nPlease aggressively test for failure modes and vulnerabilities:\n1) CORS misconfig bypasses, wildcard/credential pitfalls, dev/prod behavior mismatch.\n2) /health information leakage, caching surprises, abuse vectors.\n3) CI perf gate bypass/tampering possibilities, schema parser weakness, command injection vectors.\n4) Edge-case regressions from Program.cs refactor and module wiring.\n\nReturn:\n- findings with severity and reproduction guidance\n- required fixes (if any)\n- approve/block for moving to performance-validation.",
+      "outputPreview": "### Attack Surface Map\n- **API startup pipeline**: `apps/Api/Program.cs` middleware ordering, env-gated endpoints.\n- **CORS config path**: `AddFrontendCors(...)` + `CorsStartupValidator.Validate(...)`.\n- **Health endpoint**: `MapHealthCheckEndpoint()` filter/handler override behavior.\n- **CI perf go",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132904258,
+      "completedAt": 1772132980433,
+      "summary": "Red-team assessment identified required hardening fixes; routing back to implementation for remediation.",
+      "tokensUsed": 1510,
+      "elapsed": 76175,
+      "taskGiven": "Apply red-team must-fix remediations now:\n\n1) CORS strictness:\n- In CORS setup/validator, fail outside Development when AllowedOrigins is invalid/missing (not only Production).\n- Keep behavior explicit and secure by default for staging/CI-like envs.\n\n2) Health override hardening:\n- Remove or constrain public mutable static `HandlerOverride` in health endpoint so production path cannot be mutated at runtime by arbitrary code.\n- Preserve testability via safer mechanism (internal/test-only DI or internals-visible-to pattern).\n\n3) Perf gate governance hardening:\n- Update `.github/CODEOWNERS` to protect script indirection points at least:\n  - `/package.json`\n  - `/pnpm-lock.yaml`\n  (plus existing perf policy/workflow protections)\n\nAfter patching, run targeted validations/tests and report outcomes, including any updates to tests affected by health override changes.",
+      "outputPreview": "Implemented the red-team must-fix remediations and ran targeted validations. One API test compile issue remains (small test code fix needed next).\n\n## ✅ What I changed\n\n### 1) CORS strictness hardened (fail outside Development)\nI updated startup validation semantics so invalid/missing `AllowedOrigin",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772132988623,
+      "completedAt": 1772133007412,
+      "summary": "Core hardening fixes landed; now resolving localized test compile errors to restore green API tests.",
+      "tokensUsed": 1476,
+      "elapsed": 18789,
+      "taskGiven": "Apply minimal fix for remaining test compile errors and rerun API tests to green.\n\nKnown errors in `apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs`:\n- duplicate local variable `expiresValues`\n- nullable argument issue on `Assert.Contains`\n\nPlease patch test code cleanly, then run:\n`dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`\n\nReturn final pass/fail counts and modified files.",
+      "outputPreview": "Done — I applied a minimal patch to fix the compile errors in `HealthCheckEndpointTests` and reran the required API test suite.\n\n### ✅ What I changed\n\n**Modified file:**\n- `apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs`\n\n**Patch summary:**\n- Removed duplicate inline `out var expire",
+      "exitCode": 0
+    },
+    {
+      "state": "red-team-assessment",
+      "agentName": "red-team",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133016541,
+      "completedAt": 1772133035472,
+      "summary": "Applied red-team remediations and restored green tests; requesting closure reassessment.",
+      "tokensUsed": 3047,
+      "elapsed": 18931,
+      "taskGiven": "Targeted red-team reassessment to verify closure of prior must-fix findings.\n\nPreviously reported must-fix items:\n1) CORS fail-open outside Development.\n2) Public mutable health `HandlerOverride` integrity risk.\n3) CODEOWNERS gap allowing perf gate bypass via package scripts.\n\nImplemented remediations include:\n- CORS validator now fail-closed outside Development.\n- Health endpoint moved to DI-based handler; static mutable override removed.\n- `.github/CODEOWNERS` now includes `/package.json` and `/pnpm-lock.yaml`.\n- API tests are green (12/12).\n\nPlease verify whether these issues are closed and report any residual exploitable paths. Return final approve/block for moving to performance-validation.",
+      "outputPreview": "### Attack Surface Map\n- **Startup config path**: `AddFrontendCors(...)` + `ICorsStartupValidator.Validate(...)` in `Program.cs`\n- **CORS policy construction**: `apps/Api/Features/Cors/CorsExtensions.cs`\n- **Health endpoint behavior**: `apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs`\n- **Gover",
+      "exitCode": 0
+    },
+    {
+      "state": "performance-validation",
+      "agentName": "performance-engineer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133043282,
+      "completedAt": 1772133088729,
+      "summary": "Red-team reassessment passed; moving to post-implementation performance validation.",
+      "tokensUsed": 5385,
+      "elapsed": 45445,
+      "taskGiven": "Run post-implementation performance validation for sprint scope 017/018 (and check implications of 005/015).\n\nImplemented artifacts include:\n- `.pi/chronicle/perf-budgets.json`\n- `.pi/chronicle/perf-budgets.schema.json`\n- `scripts/verify-perf-budgets.mjs`\n- `scripts/measure-ci-perf.mjs`\n- `.github/workflows/perf-budget-gate.yml`\n\nRecent evidence from implementation:\n- `node scripts/verify-perf-budgets.mjs` passed\n- `node scripts/measure-ci-perf.mjs` passed\n- API tests pass 12/12\n\nPlease validate:\n1) Perf checks are functioning as designed (sampling/aggregation/fail behavior/artifacts).\n2) Budgets and methodology align with pre-implementation predictions and anti-flake controls.\n3) Any regressions/perf concerns from /health and CORS changes.\n4) Approve/block for final verification, with any recommended tuning.",
+      "outputPreview": "1. **Profiling Summary**\n\nI validated the implemented performance controls by:\n- Re-running the two perf governance scripts:\n  - `node scripts/verify-perf-budgets.mjs`\n  - `node scripts/measure-ci-perf.mjs`\n- Re-running API tests for regression signal:\n  - `dotnet test apps/Api.Tests/AdventureEngine",
+      "exitCode": 0
+    },
+    {
+      "state": "verification",
+      "agentName": "reviewer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133095417,
+      "completedAt": 1772133128720,
+      "summary": "Performance validation approved; entering final verification gate before commit.",
+      "tokensUsed": 1143,
+      "elapsed": 33303,
+      "taskGiven": "Run final verification QA for sprint scope items 017/018/005/015.\n\nPlease validate against acceptance criteria and report pass/fail with evidence:\n1) item-017: perf budgets defined with schema and governance controls.\n2) item-018: deterministic perf measurement/enforcement scripts + CI integration + artifact behavior.\n3) item-005: /health vertical slice contract and tests (including no-cache hardening policy intent).\n4) item-015: CORS config-driven policy with secure non-dev behavior and validation/logging.\n\nAlso verify:\n- relevant test suites pass\n- no critical unresolved findings remain from red-team/performance reviews\n- implementation is ready for commit\n\nReturn a concise verification verdict and any final defects (if any).",
+      "outputPreview": "## Final Verification Verdict: **PASS** ✅  \nSprint scope items **017 / 018 / 005 / 015** are verified and ready for commit.\n\n### Acceptance Criteria Check\n\n- **item-017 (perf budgets + schema + governance): PASS**\n  - Verified via script: `node scripts/verify-perf-budgets.mjs`\n  - Evidence: `PERF_BU",
+      "exitCode": 0
+    },
+    {
+      "state": "commit",
+      "agentName": "git-ops",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133149221,
+      "completedAt": 1772133162159,
+      "summary": "Final verification passed; proceeding to commit finalized sprint implementation.",
+      "tokensUsed": 856,
+      "elapsed": 12938,
+      "taskGiven": "Stage and create a conventional commit for the completed sprint scope implementation (items 017/018/005/015), including CI perf governance, CORS hardening, /health hardening/tests, and supporting scripts/workflows/docs updates.\n\nPlease:\n1) Review changed files.\n2) Stage appropriate files.\n3) Create a clear conventional commit message summarizing the delivered scope.\n4) Return commit hash and commit summary.",
+      "outputPreview": "I’m stopping before commit because the working tree contains **unexpected/unscoped changes** beyond the sprint implementation files, and per your rules I should report instead of committing in this state.\n\n### Why I stopped\n`git status` shows additional Chronicle/session metadata changes and other f",
+      "exitCode": 0
+    },
+    {
+      "state": "commit",
+      "agentName": "git-ops",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133183162,
+      "completedAt": 1772133204977,
+      "summary": "Prior commit attempt safely paused; retrying with explicit allowlist-only staging to avoid unscoped artifacts.",
+      "tokensUsed": 946,
+      "elapsed": 21815,
+      "taskGiven": "Perform a selective conventional commit using an explicit allowlist only. Do NOT include unrelated Chronicle session/tooling artifacts.\n\nStage and commit ONLY these sprint implementation files if present:\n- .pi/chronicle/perf-budgets.json\n- .pi/chronicle/perf-budgets.schema.json\n- scripts/verify-perf-budgets.mjs\n- scripts/measure-ci-perf.mjs\n- .github/workflows/perf-budget-gate.yml\n- .github/CODEOWNERS\n- apps/Api/Features/Cors/CorsOptions.cs\n- apps/Api/Features/Cors/CorsExtensions.cs\n- apps/Api/Features/Cors/CorsStartupValidator.cs\n- apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs\n- apps/Api/Program.cs\n- apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs\n- apps/Api.Tests/Features/HealthCheck/ThrowingHealthHandler.cs\n- package.json\n- pnpm-lock.yaml\n\nExplicitly exclude unscoped files such as:\n- `.pi/chronicle/sessions/**`\n- any unrelated modified files (e.g., extension/tooling files) not in allowlist\n\nThen create a conventional commit and return hash + summary.",
+      "outputPreview": "Done — I executed the selective allowlist commit only.\n\n### Commit created\n- **Commit:** `ae1238b`\n- **Message:** `feat(api): add perf budget CI gate with hardened health and cors`\n\n### What I accomplished\n- Ran `git status` first (as required).\n- Staged **only** the explicit allowlist files you pro",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "tech-writer",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133213275,
+      "completedAt": 1772133224595,
+      "summary": "Committed scoped sprint execution changes successfully; entering final documentation/closure state.",
+      "tokensUsed": 7595,
+      "elapsed": 11320,
+      "taskGiven": "Generate final sprint execution completion summary for user.\n\nInclude:\n- Confirmation sprint execution completed and committed (hash ae1238b)\n- Scope delivered for items 017/018/005/015\n- Key artifacts/code areas added or changed\n- Validation outcomes (API tests, perf schema/measurement checks)\n- Note any optional deferred hardening items (if any)\n\nKeep concise and actionable.",
+      "outputPreview": "## Sprint Completion Summary (Done)\n\nSprint execution is **complete and committed**.  \nConventional commit hash: **`ae1238b`**.\n\n### Delivered Scope\n\nAll targeted items were delivered and verified:\n\n- **item-017**: Performance budgets + schema + governance controls\n- **item-018**: Deterministic perf",
+      "exitCode": 0
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      ".pi/chronicle/perf-budgets.json",
+      ".pi/chronicle/perf-budgets.schema.json",
+      "scripts/verify-perf-budgets.mjs",
+      "scripts/measure-ci-perf.mjs",
+      ".github/workflows/perf-budget-gate.yml",
+      ".github/CODEOWNERS",
+      "apps/Api/Features/Cors/CorsOptions.cs",
+      "apps/Api/Features/Cors/CorsExtensions.cs",
+      "apps/Api/Features/Cors/CorsStartupValidator.cs",
+      "package.json",
+      "apps/Api/Program.cs",
+      "apps/Api/Features/HealthCheck/HealthCheckEndpoint.cs",
+      "apps/Api.Tests/Features/HealthCheck/HealthCheckEndpointTests.cs",
+      "pnpm-lock.yaml",
+      "apps/Api.Tests/Features/HealthCheck/ThrowingHealthHandler.cs"
+    ],
+    "keyFindings": [
+      "Scope review approved committed sprint increment: items 017, 018, 005, 015 (7 points aggregate) with no decomposition needed.",
+      "Primary execution risk is sequencing/variance for 017→018; measurement stability must be established early.",
+      "No deferred scope or backlog splits were required; proceed with strict adherence to existing acceptance criteria.",
+      "Execution plan created for sprint items 017/018/005/015 with explicit sequencing: 017 must precede 018.",
+      "Parallel streams identified: item-005 (health slice) and item-015 (CORS) can proceed concurrently with coordination on Program.cs.",
+      "Recommended perf budget source-of-truth file: `.pi/chronicle/perf-budgets.json`; validation matrix defined (tests, CORS smoke, perf checks).",
+      "Architecture review approved with required notes: modularize Program.cs via extension methods/feature modules.",
+      "Must keep perf budget enforcement in CI/tooling layer only, not runtime path.",
+      "Must define /health semantics upfront and use typed/validated AllowedOrigins configuration with secure defaults.",
+      "Anti-flake strategy required for perf checks (sampling/warm-up/schema validation).",
+      "Security review approved with mandatory controls, top risk is CI policy integrity for perf budgets/scripts (High).",
+      "Required controls: schema-validate perf-budgets.json, fail-closed parsing, CODEOWNERS protection, safe process spawning without shell interpolation.",
+      "Medium controls: tighten CORS startup guardrails/tests, restrict /secure-test endpoint exposure to development only, add /health no-cache hardening checks.",
+      "Performance review approved with mandatory controls centered on CI measurement stability for items 017/018.",
+      "Required: warmup + multi-sample measurements, robust aggregation (median/p90), variance guard, deterministic environment capture/artifacts.",
+      "/health and CORS expected low runtime overhead if /health remains shallow (no external I/O) and CORS stays exact allowlist.",
+      "UX review approved with required controls focused on developer experience (clear CORS/perf failure messaging and troubleshooting guidance).",
+      "Require stable documented /health schema/semantics and normalized CI perf output format for fast remediation.",
+      "No UI design blockers; primary UX surface is CLI/log/API interaction quality.",
+      "DevOps review verdict: BLOCK (not ready) due to missing CI workflow enforcement for perf budgets/scripts.",
+      "Mandatory operational fixes: add CI fail-closed perf validation + artifact retention, add CORS preflight/runbook, structured logging for CORS, /health no-cache hardening.",
+      "Current repository lacks `.github/workflows`; operational governance must be implemented in sprint scope.",
+      "[Assist hop] Devops Review -> Planning: DevOps gate blocked plan; need corrective planning before approval.",
+      "Planning revised to resolve DevOps block without scope deferral; sprint remains fit.",
+      "Added mandatory plan elements: CI workflow fail-closed perf gate, artifact retention, CODEOWNERS governance, CORS runbook/preflight, structured logging, /health no-cache tests.",
+      "Execution tracks defined: 017 governance first, 005 and 015 in parallel, 018 finalization via CI gating.",
+      "DevOps re-gate now APPROVED; prior operational blockers resolved at plan level.",
+      "Non-negotiable implementation checkpoints established: fail-closed CI workflow, artifact retention on success/failure, CODEOWNERS protections, CORS runbook/preflight, structured logging, /health no-cache tests.",
+      "Plan is ready for final approval and implementation start.",
+      "Final plan gate verdict: APPROVE for sprint scope items 017/018/005/015.",
+      "All specialist constraints reconciled; no remaining pre-implementation blockers.",
+      "Implementation guardrails and execution order established (017 first, 005/015 parallel, 018 finalize, then verification).",
+      "Implementation delivered major artifacts for items 017/018: perf budgets/schema, validation+measurement scripts, CI workflow, CODEOWNERS.",
+      "CORS modular components were added but Program.cs integration is incomplete; inline logic may still conflict.",
+      "Health slice existed pre-implementation and appears aligned, but explicit /health no-cache enforcement verification remains pending.",
+      "Tests/perf commands were not fully executed yet in this pass.",
+      "Program.cs now fully wires CORS via Features/Cors module and startup validator; duplicate inline CORS logic removed.",
+      "/health no-cache headers added plus test, but test currently failing (header mismatch).",
+      "Validation failures: dotnet test has 1 failing no-cache test; perf schema script fails due to missing `ajv`; perf measurement script fails due to missing `pnpm` in environment.",
+      "Stabilization fixes applied: /health cache-control format adjusted, ajv dependency added/wired, pnpm execution fallback added for Windows.",
+      "Lockfile updated via `pnpm install --lockfile-only`.",
+      "Required validation commands were not rerun post-fix in this pass; green evidence still pending.",
+      "Post-fix validation results: perf budget schema check PASS; perf measurement check PASS.",
+      "API test suite still failing one test: `GetHealth_ReturnsNoCacheHeaders` due to `Pragma` header assertion mismatch.",
+      "Red-team handoff still blocked pending green API tests.",
+      "Final API blocker resolved by making /health no-cache test standards-aligned; mandatory Cache-Control asserted, legacy headers conditional.",
+      "API test suite now green: 12 passed, 0 failed for `apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release`.",
+      "Perf validation scripts previously confirmed passing after dependency install; implementation now ready for red-team assessment.",
+      "Red-team found must-fix issues before next gate: CORS fail-open risk outside Development, public mutable health handler override, and perf-gate bypass via unprotected package scripts.",
+      "Additional governance gap: CODEOWNERS should include package.json and pnpm-lock.yaml.",
+      "Verdict from red-team: Ship with fixes (not a full block but requires remediation).",
+      "[Assist hop] Red Team Assessment -> Implementation: Red-team found must-fix issues requiring code/config remediation before next gate.",
+      "Red-team must-fix remediations implemented: CORS now fail-closed outside Development, health mutable static override removed via DI handler pattern, CODEOWNERS expanded to package.json/pnpm-lock.yaml.",
+      "Perf schema validation passes after remediation.",
+      "Remaining blocker is localized API test compile error in `HealthCheckEndpointTests.cs` (duplicate variable/nullability) preventing green test run.",
+      "Localized test compile issues fixed; API tests now PASS (12/12).",
+      "Red-team remediations and follow-up test stability are now in place.",
+      "Implementation appears ready for re-assessment/next validation gate.",
+      "Red-team closure reassessment approved: all prior must-fix findings closed.",
+      "CORS fail-closed behavior, health handler integrity hardening, and CODEOWNERS governance protections verified.",
+      "No residual high/medium red-team blockers; optional hardening is restricting /secure-test to Development only.",
+      "Performance validation approved: perf schema and measurement scripts pass; API tests pass 12/12.",
+      "Fail-closed CI perf governance with anti-flake controls verified operational.",
+      "No material performance regression risk detected from /health or CORS changes.",
+      "Verification verdict PASS for items 017/018/005/015 with all required checks green.",
+      "Evidence: API tests 12/12 pass, perf budget schema validation pass, perf measurement/enforcement pass.",
+      "No critical unresolved defects; implementation is commit-ready.",
+      "Commit step paused due to unexpected unscoped working-tree changes (Chronicle/session/tooling artifacts).",
+      "No commit was created in previous commit state run.",
+      "Need selective staging strategy restricted to sprint implementation file allowlist.",
+      "Selective scoped commit successfully created: ae1238b with conventional message for sprint implementation.",
+      "Commit includes allowlisted sprint files only (perf governance, CORS hardening, /health updates/tests, package/lock changes).",
+      "API tests were run during commit step and passed (12/12)."
+    ],
+    "pendingTasks": [
+      "Create implementation plan and task sequencing that front-loads item-017 and controls dependencies for item-018.",
+      "Carry API vertical slice (item-005) and CORS config (item-015) in parallel where feasible.",
+      "Run architecture/security/performance/ux/devops pre-implementation reviews against the sprint plan.",
+      "Gate final plan approval before implementation.",
+      "Apply architecture constraints in downstream security/performance/devops review and implementation plan.",
+      "Incorporate mandatory security controls into implementation DoD for items 017/018/015 before coding.",
+      "Verify security invariants via tests in implementation and verification phases.",
+      "Carry mandatory performance controls into implementation DoD and CI scripts design.",
+      "Run remaining UX and DevOps reviews before plan approval.",
+      "Run DevOps operational readiness review.",
+      "Include UX messaging/output requirements in implementation DoD and docs updates.",
+      "Revise implementation plan to include DevOps blocker fixes before plan approval.",
+      "Re-run DevOps review after planning updates to clear BLOCK.",
+      "Re-run DevOps review on revised plan to clear prior block.",
+      "Run final plan-approval gate then proceed to implementation.",
+      "Run final plan-approval gate synthesizing all specialist constraints before coding.",
+      "Begin implementation of sprint items after approval.",
+      "Execute implementation for approved sprint scope with mandatory security/perf/devops/ux controls.",
+      "Run post-implementation red-team, performance validation, verification, and commit workflow.",
+      "Complete Program.cs CORS wiring to use new module and remove duplicate/conflicting inline logic.",
+      "Verify /health no-cache headers are implemented and tested.",
+      "Run full validation: dotnet tests + relevant JS/perf script checks and report outcomes.",
+      "Fix failing /health no-cache assertion/implementation and rerun API tests to green.",
+      "Ensure Node toolchain dependencies for perf scripts (`ajv`, `pnpm`) and rerun perf validation commands.",
+      "Only proceed to red-team once tests/validations are passing or blockers are clearly scoped as environment-only with mitigation.",
+      "Re-run dotnet API tests and perf scripts post-fix to obtain pass/fail evidence.",
+      "Proceed to red-team only after post-fix validation matrix is reported.",
+      "Resolve no-cache header behavior/assertion mismatch for `/health`.",
+      "Re-run `dotnet test apps/Api.Tests/AdventureEngine.Api.Tests.csproj -c Release` to green before moving to red-team.",
+      "Run red-team adversarial assessment on implemented sprint scope.",
+      "Run performance validation, full verification, then commit and documentation wrap-up.",
+      "Implement three red-team must-fix remediations in code/config.",
+      "Re-run red-team assessment (or equivalent targeted checks) to confirm closure before performance validation.",
+      "Fix localized compile issues in HealthCheckEndpointTests and rerun API tests to green.",
+      "After green tests, re-run red-team assessment for closure confirmation.",
+      "Run red-team reassessment to confirm must-fix closures.",
+      "Proceed to performance-validation after red-team confirms no remaining high/medium blockers.",
+      "Run post-implementation performance validation against implemented scripts/gates.",
+      "Proceed to final verification once performance validation passes.",
+      "Run final verification QA against acceptance criteria and test coverage.",
+      "If verification passes, proceed to commit state.",
+      "Create conventional commit with all implemented sprint files.",
+      "Generate final completion/changelog summary in done state.",
+      "Run commit state again with explicit allowlist of sprint scope files and exclude session artifacts/unscoped files.",
+      "Produce final completion summary/changelog documentation for sprint execution."
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "scope-review->scope-review": 1,
+    "scope-review->planning": 1,
+    "planning->architecture-review": 1,
+    "architecture-review->security-review": 1,
+    "security-review->performance-review": 1,
+    "performance-review->ux-review": 1,
+    "ux-review->devops-review": 1,
+    "devops-review->planning": 1,
+    "planning->devops-review": 1,
+    "devops-review->plan-approval": 1,
+    "plan-approval->implementation": 1,
+    "implementation->implementation": 5,
+    "implementation->red-team-assessment": 2,
+    "red-team-assessment->implementation": 1,
+    "red-team-assessment->performance-validation": 1,
+    "performance-validation->verification": 1,
+    "verification->commit": 1,
+    "commit->commit": 1,
+    "commit->done": 1
+  },
+  "issueTracker": {
+    "openIssues": {},
+    "resolvedIssueIds": [
+      "ex-1 execute sprint scope definition and acceptance lock",
+      "ex-2 sprint execution plan and sequencing",
+      "ex-3 architecture review corrections for sprint plan",
+      "ex-4 security controls for sprint execution",
+      "ex-5 pre-implementation performance controls and measurement strategy",
+      "ex-6 ux/developer-experience requirements for sprint execution",
+      "ex-7 devops operational controls for sprint execution",
+      "ex-8 plan corrections to satisfy devops blocker",
+      "ex-9 devops re-gate after planning corrections",
+      "ex-10 final plan approval for sprint execution",
+      "ex-11 implement sprint scope items 017/018/005/015",
+      "ex-12 close implementation gaps before red-team",
+      "ex-13 final implementation stabilization and validation",
+      "ex-14 post-fix validation evidence for implementation readiness",
+      "ex-15 clear final api test blocker for readiness",
+      "ex-16 post-implementation red-team assessment",
+      "ex-17 apply red-team must-fix remediations",
+      "ex-18 final test compile fix after red-team remediation",
+      "ex-19 red-team closure confirmation",
+      "ex-20 post-implementation performance validation",
+      "ex-21 final qa verification",
+      "ex-22 create commit for completed sprint execution",
+      "ex-23 selective commit with scoped file allowlist"
+    ],
+    "lastOpenHash": "",
+    "stagnationCount": 0,
+    "lastProgressAt": 1772133213274,
+    "recentTransitions": [
+      {
+        "from": "plan-approval",
+        "to": "implementation",
+        "at": 1772132493819
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772132618116
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772132690198
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772132748313
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772132826932
+      },
+      {
+        "from": "implementation",
+        "to": "red-team-assessment",
+        "at": 1772132865667
+      },
+      {
+        "from": "red-team-assessment",
+        "to": "implementation",
+        "at": 1772132904258
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772132988623
+      },
+      {
+        "from": "implementation",
+        "to": "red-team-assessment",
+        "at": 1772133016540
+      },
+      {
+        "from": "red-team-assessment",
+        "to": "performance-validation",
+        "at": 1772133043282
+      },
+      {
+        "from": "performance-validation",
+        "to": "verification",
+        "at": 1772133095416
+      },
+      {
+        "from": "verification",
+        "to": "commit",
+        "at": 1772133135853
+      },
+      {
+        "from": "commit",
+        "to": "commit",
+        "at": 1772133176055
+      },
+      {
+        "from": "commit",
+        "to": "done",
+        "at": 1772133213274
+      }
+    ]
+  },
+  "totalTokens": 121337,
+  "totalElapsed": 899822,
+  "status": "done"
+}

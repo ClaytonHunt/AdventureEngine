@@ -1,0 +1,139 @@
+{
+  "id": "66e0b734e87bc86e",
+  "workflowName": "Sprint Planning",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\sprint-planning.json",
+  "workflowDef": {
+    "name": "Sprint Planning",
+    "description": "Select the highest-priority backlog items that fit within one sprint's capacity, validate dependencies, and produce a ready-to-execute sprint plan",
+    "initial": "backlog-review",
+    "states": {
+      "backlog-review": {
+        "description": "Review backlog health before planning — flag items missing acceptance criteria, xl items that need splitting, and stale items that need re-evaluation",
+        "agent": "backlog-manager",
+        "next": [
+          "sprint-selection"
+        ],
+        "requires_approval": false
+      },
+      "sprint-selection": {
+        "description": "Select highest-priority items up to effective sprint capacity, resolve dependencies, update item statuses to in-sprint, and write the sprint plan to .pi/chronicle/sprint-plan.md",
+        "agent": "sprint-planner",
+        "next": [
+          "done",
+          "backlog-review"
+        ],
+        "requires_approval": true
+      },
+      "done": {
+        "description": "Sprint plan finalized — summarize the sprint goal, selected items, and first recommended workflow to run",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1772135847076,
+  "lastUpdated": 1772136112827,
+  "currentState": "done",
+  "currentStateTask": "Finalize sprint-planning output for the user. Provide a concise final summary including: (1) Sprint Goal, (2) selected in-sprint items and point total vs capacity, (3) why this set best unblocks dependencies, and (4) first recommended execution workflow/order. Base on canonical artifacts updated in prior step (`.pi/chronicle/backlog.json`, `.pi/chronicle/sprint-plan.md`).",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "backlog-review",
+      "agentName": "backlog-manager",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772135877700,
+      "completedAt": 1772135902673,
+      "summary": "Started workflow from backlog-review with user directive to prioritize dependency-blocking work for next sprint.",
+      "tokensUsed": 18677,
+      "elapsed": 24972,
+      "taskGiven": "Initial sprint planning kickoff. Review the canonical backlog at `.pi/chronicle/backlog.json` for backlog health with a specific prioritization lens: identify and flag items that are prerequisites/dependencies for other stories so we can unblock downstream work this sprint. Please: (1) identify items missing acceptance criteria, (2) identify XL items needing split, (3) identify stale items needing re-evaluation, (4) map dependency relationships and call out blocker items that should be prioritized. Provide a concise groomed-backlog summary and any recommended status/priority adjustments to support dependency-first sprint selection. Respect artifact policy; do not create duplicate backlog/sprint files outside canonical paths.",
+      "outputPreview": "Completed — I reviewed the canonical backlog at `.pi/chronicle/backlog.json` with a dependency-first grooming lens and identified health issues + blocker priorities for sprint selection.\n\n### Backlog Changes\nNo file edits made (analysis-only review).\n\n### Health Review Findings\n\n#### 1) Items missin",
+      "exitCode": 0
+    },
+    {
+      "state": "sprint-selection",
+      "agentName": "sprint-planner",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772135920621,
+      "completedAt": 1772136096631,
+      "summary": "Captured backlog-review findings and moved to sprint-selection with explicit dependency-first objective and user requirement for final sprint goal/summary.",
+      "tokensUsed": 2030,
+      "elapsed": 176010,
+      "taskGiven": "Using the groomed backlog in `.pi/chronicle/backlog.json`, create a dependency-first sprint plan per user request: prioritize stories that are prerequisites for other work to maximize unblocking. Respect effective sprint capacity ~6 points (8 * 0.8) unless a compelling reason to adjust is documented. Validate dependency constraints and avoid selecting items whose prerequisites are not planned/completed. Update selected item statuses to `in-sprint` in the canonical backlog, and write the sprint plan to `.pi/chronicle/sprint-plan.md` only. Include: sprint goal, selected items with rationale, dependency graph/sequence, capacity math, deferred items with reasons, and first recommended execution order/workflow. Context from backlog review: strongest unblock set is item-006 + item-008 + item-009 (2+2+2=6) enabling item-010 and downstream CI chain.",
+      "outputPreview": "Sprint planning is complete and executed.\n\n### What I accomplished\n- Read config from `.pi/project.json` and used canonical artifact paths.\n- Calculated capacity:\n  - Total: **8pt**\n  - Buffer: **20%**\n  - Effective: **6.4pt**\n- Reviewed pending backlog items and validated readiness/dependencies.\n- ",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "documenter",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772136103659,
+      "completedAt": 1772136112827,
+      "summary": "Sprint selection completed, backlog and sprint-plan artifacts updated with dependency-first 6-point plan.",
+      "tokensUsed": 3145,
+      "elapsed": 9167,
+      "taskGiven": "Finalize sprint-planning output for the user. Provide a concise final summary including: (1) Sprint Goal, (2) selected in-sprint items and point total vs capacity, (3) why this set best unblocks dependencies, and (4) first recommended execution workflow/order. Base on canonical artifacts updated in prior step (`.pi/chronicle/backlog.json`, `.pi/chronicle/sprint-plan.md`).",
+      "outputPreview": "## Sprint Planning Final Summary\n\n### 1) Sprint Goal\nDeliver the **dependency foundation sprint** by completing **item-006, item-008, and item-009** so downstream work (starting with item-010, then item-016, then item-019) is unblocked.\n\n### 2) Selected In-Sprint Items (Points vs Capacity)\n- **item-",
+      "exitCode": 0
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      ".pi/chronicle/backlog.json",
+      ".pi/chronicle/sprint-plan.md"
+    ],
+    "keyFindings": [
+      "Backlog health is good: no items missing acceptance criteria and no XL items needing split.",
+      "Primary dependency chain to unblock: item-006 → (item-008 + item-009) → item-010 → item-016 → item-019.",
+      "Dependency congestion is main planning risk; prioritize foundational blockers before downstream documentation/perf gate closure items.",
+      "Backlog-manager recommended immediate sprint fit at 6 points: item-006, item-008, item-009.",
+      "Effective sprint capacity calculated at 6.4 points (8pt with 20% buffer).",
+      "Dependency-first sprint selection completed: item-006, item-008, item-009 (total 6 points).",
+      "Selected items were updated to `in-sprint` in canonical backlog.",
+      "Downstream unblock path for next sprint starts with item-010, then item-016, then item-019 chain."
+    ],
+    "pendingTasks": [
+      "Run sprint-selection to choose dependency-first items within effective capacity (~6 pts), validate dependencies, update statuses to in-sprint, and write `.pi/chronicle/sprint-plan.md`.",
+      "Then run done/documenter to provide final sprint goal and concise sprint summary to user.",
+      "Run terminal done/documenter state to produce final user-facing sprint goal and summary, including selected items and first recommended workflow order."
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "backlog-review->backlog-review": 1,
+    "backlog-review->sprint-selection": 1,
+    "sprint-selection->done": 1
+  },
+  "issueTracker": {
+    "openIssues": {},
+    "resolvedIssueIds": [
+      "initial backlog health review completed",
+      "need finalized dependency-first sprint selection within 6-point capacity",
+      "need canonical sprint plan document generated at `.pi/chronicle/sprint-plan.md`"
+    ],
+    "lastOpenHash": "",
+    "stagnationCount": 0,
+    "lastProgressAt": 1772136103659,
+    "recentTransitions": [
+      {
+        "from": "backlog-review",
+        "to": "backlog-review",
+        "at": 1772135877700
+      },
+      {
+        "from": "backlog-review",
+        "to": "sprint-selection",
+        "at": 1772135913886
+      },
+      {
+        "from": "sprint-selection",
+        "to": "done",
+        "at": 1772136103659
+      }
+    ]
+  },
+  "totalTokens": 23852,
+  "totalElapsed": 210149,
+  "status": "done"
+}

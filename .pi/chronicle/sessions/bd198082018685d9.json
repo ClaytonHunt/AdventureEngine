@@ -1,0 +1,142 @@
+{
+  "id": "bd198082018685d9",
+  "workflowName": "Backlog Grooming",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\backlog-grooming.json",
+  "workflowDef": {
+    "name": "Backlog Grooming",
+    "description": "Ingest raw requirements or groom the existing backlog — decompose oversized items, write acceptance criteria, assign sizes, and establish priority order",
+    "initial": "ingestion",
+    "states": {
+      "ingestion": {
+        "description": "Take raw requirements and decompose them into properly-sized, prioritized backlog items — write all new items to .pi/chronicle/backlog.json",
+        "agent": "backlog-manager",
+        "next": [
+          "review"
+        ],
+        "requires_approval": false
+      },
+      "review": {
+        "description": "Review the updated backlog for health — check sizing, acceptance criteria completeness, dependencies, and priority order",
+        "agent": "backlog-manager",
+        "next": [
+          "done",
+          "ingestion"
+        ],
+        "requires_approval": false
+      },
+      "done": {
+        "description": "Grooming complete — summarize the backlog state and note what is ready for sprint planning",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1772129376756,
+  "lastUpdated": 1772129466745,
+  "currentState": "done",
+  "currentStateTask": "Grooming workflow is complete. Please produce a concise final summary of backlog readiness for sprint planning, based on the latest ledger context:\n- Ingestion and review completed\n- Backlog path: `.pi/chronicle/backlog.json`\n- Review verdict: PASS\n- Suggested 6-point sprint cut: item-017, item-018, item-005\n- Stretch to 8 points: add item-015 and item-011\n- Outstanding decisions: feature-vs-reliability emphasis, Playwright-in-CI timing, Docker Compose priority\n\nOutput should clearly state what is ready now and what decisions are pending before sprint commitment.",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772129397977,
+      "completedAt": 1772129418767,
+      "summary": "Started backlog grooming from user request to refine backlog in preparation for next sprint.",
+      "tokensUsed": 18260,
+      "elapsed": 20790,
+      "taskGiven": "User request: \"refine in prep for next sprint.\" Please groom the existing backlog for sprint readiness.\n\nActions:\n1) Read current backlog at `.pi/chronicle/backlog.json` (create it if missing).\n2) Ingest any raw/unstructured items currently present and convert into properly scoped backlog items.\n3) Split oversized items into smaller, sprint-fit stories.\n4) For each item, ensure clear acceptance criteria, estimate/size, dependencies, and priority ordering.\n5) Remove ambiguity, duplicates, and stale/invalid entries where appropriate.\n6) Write the updated backlog back to the canonical path `.pi/chronicle/backlog.json` only.\n\nOutput requested:\n- Summary of what was changed\n- Any assumptions made due to missing requirements\n- List of risks/open questions to validate before sprint planning",
+      "outputPreview": "Completed — I groomed the existing backlog for sprint readiness and updated the canonical file at:\n\n- **Modified:** `.pi/chronicle/backlog.json`\n\n### Backlog Changes\nNo structural item edits were required this pass because the backlog is already in strong shape:\n- no `xl` items\n- all items have acce",
+      "exitCode": 0
+    },
+    {
+      "state": "review",
+      "agentName": "backlog-manager",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772129428746,
+      "completedAt": 1772129448574,
+      "summary": "Completed ingestion grooming pass and now running formal backlog health review and sprint-fit check.",
+      "tokensUsed": 16484,
+      "elapsed": 19828,
+      "taskGiven": "Review the updated backlog at `.pi/chronicle/backlog.json` for backlog health and sprint-readiness quality gate.\n\nPlease validate and report:\n1) Sizing sanity (no oversized items for sprint execution)\n2) Acceptance criteria completeness/testability per item\n3) Dependency correctness (no cycles, no missing prerequisites, sequencing coherent)\n4) Priority ordering quality vs dependencies and likely value delivery\n5) Any anti-patterns (too many infra-first tasks, weak user-value linkage, hidden risk)\n\nThen provide:\n- PASS/BLOCK verdict for grooming quality\n- Specific corrective edits if needed (and apply them directly to `.pi/chronicle/backlog.json`)\n- A suggested top candidate sprint cut aligned to ~6 points capacity (optionally include an 8-point stretch)\n- List of unresolved questions requiring product/engineering decisions",
+      "outputPreview": "### Backlog Changes\nNo corrective edits were required after quality-gate review.\n\n### Backlog Summary\n```text\nTotal items: 19\nPending: 15  |  In-Sprint: 4  |  In-Progress: 0  |  Done: 0  |  Deferred: 0\nTotal pending points: 29\n```\n\n### PASS/BLOCK Verdict\n**PASS** — backlog is healthy and sprint-read",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "documenter",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772129456184,
+      "completedAt": 1772129463975,
+      "summary": "Completed review gate with PASS verdict and selected recommended sprint cut for next sprint planning.",
+      "tokensUsed": 3050,
+      "elapsed": 7790,
+      "taskGiven": "Grooming workflow is complete. Please produce a concise final summary of backlog readiness for sprint planning, based on the latest ledger context:\n- Ingestion and review completed\n- Backlog path: `.pi/chronicle/backlog.json`\n- Review verdict: PASS\n- Suggested 6-point sprint cut: item-017, item-018, item-005\n- Stretch to 8 points: add item-015 and item-011\n- Outstanding decisions: feature-vs-reliability emphasis, Playwright-in-CI timing, Docker Compose priority\n\nOutput should clearly state what is ready now and what decisions are pending before sprint commitment.",
+      "outputPreview": "## Backlog Readiness Summary (Sprint Planning)\n\nBacklog grooming is **complete** and the backlog is **ready for sprint planning**.\n\n### ✅ What is ready now\n- Canonical backlog has been ingested, normalized, and validated at:\n  - `.pi/chronicle/backlog.json`\n- Review quality gate result: **PASS**\n- B",
+      "exitCode": 0
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      ".pi/chronicle/backlog.json"
+    ],
+    "keyFindings": [
+      "Backlog grooming pass completed; backlog found already well-structured and sprint-ready with no decomposition changes needed.",
+      "Backlog totals: 19 items; 15 pending, 4 in-sprint; total pending points 29.",
+      "Primary risk is sprint capacity fit (~6 points target) versus pending scope and dependency sequencing.",
+      "Canonical backlog file `.pi/chronicle/backlog.json` was validated and rewritten in place.",
+      "Backlog health review verdict: PASS; no corrective edits required.",
+      "All items are sprint-sized, have testable acceptance criteria, and dependency graph is coherent with no cycles.",
+      "Recommended committed sprint cut (~6 points): item-017 (1), item-018 (2), item-005 (3).",
+      "Optional stretch to 8 points: add item-015 (1) and item-011 (1).",
+      "Primary remaining decisions are prioritization strategy (feature-first vs reliability-first), Playwright CI inclusion timing, and Docker Compose urgency.",
+      "Workflow reached terminal done state with final documentation summary.",
+      "Backlog grooming complete and sprint-planning readiness confirmed.",
+      "Committed 6-point cut and 8-point stretch proposal documented along with pending product decisions."
+    ],
+    "pendingTasks": [
+      "Run backlog health review gate for sizing/acceptance/dependency/priority confirmation.",
+      "Finalize recommended sprint-ready subset and identify any blockers/open questions requiring PM decision.",
+      "Produce final grooming summary for stakeholder consumption and readiness for sprint planning.",
+      "Resolve three pending prioritization decisions during sprint planning: feature-vs-reliability emphasis, Playwright CI timing, Docker Compose priority."
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "ingestion->ingestion": 1,
+    "ingestion->review": 1,
+    "review->done": 1
+  },
+  "issueTracker": {
+    "openIssues": {},
+    "resolvedIssueIds": [
+      "bg-1 backlog refinement for next sprint readiness initiated",
+      "bg-2 backlog review gate and sprint-cut recommendation"
+    ],
+    "lastOpenHash": "",
+    "stagnationCount": 0,
+    "lastProgressAt": 1772129456184,
+    "recentTransitions": [
+      {
+        "from": "ingestion",
+        "to": "ingestion",
+        "at": 1772129397977
+      },
+      {
+        "from": "ingestion",
+        "to": "review",
+        "at": 1772129428746
+      },
+      {
+        "from": "review",
+        "to": "done",
+        "at": 1772129456184
+      }
+    ]
+  },
+  "totalTokens": 37794,
+  "totalElapsed": 48408,
+  "status": "done"
+}

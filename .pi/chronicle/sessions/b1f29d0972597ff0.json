@@ -1,0 +1,92 @@
+{
+  "id": "b1f29d0972597ff0",
+  "workflowName": "Sprint Planning",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\sprint-planning.json",
+  "workflowDef": {
+    "name": "Sprint Planning",
+    "description": "Select the highest-priority backlog items that fit within one sprint's capacity, validate dependencies, and produce a ready-to-execute sprint plan",
+    "initial": "backlog-review",
+    "states": {
+      "backlog-review": {
+        "description": "Review backlog health before planning — flag items missing acceptance criteria, xl items that need splitting, and stale items that need re-evaluation",
+        "agent": "backlog-manager",
+        "next": [
+          "sprint-selection"
+        ],
+        "requires_approval": false
+      },
+      "sprint-selection": {
+        "description": "Select highest-priority items up to effective sprint capacity, resolve dependencies, update item statuses to in-sprint, and write the sprint plan to .pi/chronicle/sprint-plan.md",
+        "agent": "sprint-planner",
+        "next": [
+          "done",
+          "backlog-review"
+        ],
+        "requires_approval": true
+      },
+      "done": {
+        "description": "Sprint plan finalized — summarize the sprint goal, selected items, and first recommended workflow to run",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1772119033290,
+  "lastUpdated": 1772119289642,
+  "currentState": "done",
+  "currentStateTask": "Finalize sprint planning output for the user who asked: \"Plan the next sprint.\"\n\nPlease provide a concise final summary from the completed sprint selection, including:\n- sprint goal\n- selected items and total points vs effective capacity\n- what was explicitly deferred/blocked (especially CI perf chain 017->018->019) and why\n- first recommended workflow to run next for execution.\n\nContext:\n- Effective capacity is 6.4pt (8pt with 20% buffer)\n- Selected in-sprint: item-004 (2pt), item-014 (2pt), item-005 (3pt) = 6pt\n- Sprint plan file exists at .pi/chronicle/sprint-plan.md\n- Backlog statuses for selected items were updated to in-sprint.",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "sprint-selection",
+      "agentName": "sprint-planner",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772119082333,
+      "completedAt": 1772119267059,
+      "summary": "Transitioned from backlog review to sprint selection to build the next sprint plan from the groomed backlog, prioritizing new CI performance gate work.",
+      "tokensUsed": 3332,
+      "elapsed": 184726,
+      "taskGiven": "Plan the next sprint from the current backlog and produce a ready-to-execute sprint plan.\n\nPrimary objective:\nSelect highest-priority items that fit one sprint capacity, validate dependencies, and mark selected items as in-sprint.\n\nImportant context:\n- Recent high-priority requirement added: strict CI performance budgets with pass/fail gates.\n- Relevant backlog chain:\n  - item-017: define numeric perf budgets (startup/CI/storybook)\n  - item-018: implement timing instrumentation in CI\n  - item-019: enforce hard perf gates (fail CI on breach)\n- Keep dependency order intact (017 -> 018 -> 019).\n- Prefer including this chain in the sprint where feasible, starting with 017 and 018 at minimum.\n\nPlanning instructions:\n1) Read .pi/chronicle/backlog.json.\n2) Determine effective sprint capacity from available project/backlog context; if explicit capacity is missing, use a conservative, clearly stated assumption.\n3) Select top-priority items up to capacity while honoring dependencies.\n4) Ensure each selected item is execution-ready and statuses updated to in-sprint.\n5) Write the sprint plan to .pi/chronicle/sprint-plan.md including:\n   - sprint goal\n   - selected items with points and rationale\n   - dependency notes\n   - explicit out-of-sprint items and why\n   - ordered implementation sequence\n   - risks/mitigations\n6) Return a concise summary of selected scope and total points.\n\nUser request to satisfy now: \"Plan the next sprint.\"",
+      "outputPreview": "Sprint planning is complete and executed.\n\n### What I accomplished\n- Read sprint configuration from `.pi/project.json`:\n  - Capacity: **8pt**\n  - Buffer: **20%**\n  - Effective capacity: **6.4pt**\n  - Sprint length: **10 days**\n- Read and evaluated pending backlog items from `.pi/chronicle/backlog.js",
+      "exitCode": 0
+    },
+    {
+      "state": "done",
+      "agentName": "documenter",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772119277934,
+      "completedAt": 1772119289642,
+      "summary": "Completed sprint selection and produced a ready-to-execute sprint plan within capacity; finalized for stakeholder summary.",
+      "tokensUsed": 3056,
+      "elapsed": 11708,
+      "taskGiven": "Finalize sprint planning output for the user who asked: \"Plan the next sprint.\"\n\nPlease provide a concise final summary from the completed sprint selection, including:\n- sprint goal\n- selected items and total points vs effective capacity\n- what was explicitly deferred/blocked (especially CI perf chain 017->018->019) and why\n- first recommended workflow to run next for execution.\n\nContext:\n- Effective capacity is 6.4pt (8pt with 20% buffer)\n- Selected in-sprint: item-004 (2pt), item-014 (2pt), item-005 (3pt) = 6pt\n- Sprint plan file exists at .pi/chronicle/sprint-plan.md\n- Backlog statuses for selected items were updated to in-sprint.",
+      "outputPreview": "Sprint planning is complete. Here’s the finalized sprint summary for **“Plan the next sprint.”**\n\n### Sprint Goal\nDeliver the highest-value, execution-ready work that fits current sprint capacity while preserving dependency integrity and setting up future CI performance-gate work.\n\n### Selected In-S",
+      "exitCode": 0
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [
+      ".pi/chronicle/backlog.json",
+      ".pi/chronicle/sprint-plan.md"
+    ],
+    "keyFindings": [
+      "Sprint capacity from .pi/project.json: 8pt with 20% buffer => 6.4pt effective over 10 days.",
+      "Selected in-sprint items totaling 6pt: item-004 (2pt), item-014 (2pt), item-005 (3pt).",
+      "CI perf budget chain (item-017 -> item-018 -> item-019) cannot be scheduled this sprint due unresolved dependencies on items 010/016/008.",
+      "Sprint plan written and backlog statuses updated to in-sprint for selected items."
+    ],
+    "pendingTasks": [
+      "Execute selected sprint items item-004, item-014, and item-005 in sequence.",
+      "In upcoming sprint(s), prioritize dependency-unblocking path 006 -> 008/007/009 -> 010 -> 016, then 017 -> 018 -> 019."
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "backlog-review->sprint-selection": 1,
+    "sprint-selection->done": 1
+  },
+  "totalTokens": 6388,
+  "totalElapsed": 196434,
+  "status": "done"
+}

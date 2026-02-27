@@ -1,0 +1,126 @@
+{
+  "id": "2595a81ad3d48234",
+  "workflowName": "Backlog Grooming",
+  "workflowPath": "D:\\projects\\AdventureEngine\\.pi\\chronicle\\workflows\\backlog-grooming.json",
+  "workflowDef": {
+    "name": "Backlog Grooming",
+    "description": "Ingest raw requirements or groom the existing backlog — decompose oversized items, write acceptance criteria, assign sizes, and establish priority order",
+    "initial": "ingestion",
+    "states": {
+      "ingestion": {
+        "description": "Take raw requirements and decompose them into properly-sized, prioritized backlog items — write all new items to .pi/chronicle/backlog.json",
+        "agent": "backlog-manager",
+        "next": [
+          "review"
+        ],
+        "requires_approval": false
+      },
+      "review": {
+        "description": "Review the updated backlog for health — check sizing, acceptance criteria completeness, dependencies, and priority order",
+        "agent": "backlog-manager",
+        "next": [
+          "done",
+          "ingestion"
+        ],
+        "requires_approval": false
+      },
+      "done": {
+        "description": "Grooming complete — summarize the backlog state and note what is ready for sprint planning",
+        "agent": "documenter",
+        "next": [],
+        "requires_approval": false
+      }
+    }
+  },
+  "created": 1772133687492,
+  "lastUpdated": 1772133836818,
+  "currentState": "ingestion",
+  "currentStateTask": "User asks: \"what is the full list of items not completed that come numerically before other items that have been completed?\"\n\nPlease inspect `.pi/chronicle/backlog.json` and compute exactly:\n1) Identify all items with `status: done` (completed).\n2) Find every item with status not done (e.g., pending/in-sprint/in-progress/deferred) whose numeric ID is LOWER than at least one done item's numeric ID.\n   - Example rule: if item-010 is done, then item-001..009 that are not done should be included.\n3) Return the full list sorted numerically with each item's current status and priority.\n4) Also include a concise count summary.\n\nDo not modify files; read-only analysis.",
+  "initialTask": "",
+  "history": [
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133769198,
+      "completedAt": 1772133784138,
+      "summary": "Paused next-sprint grooming to perform targeted completion audit for items 001, 003, and 004 before planning.",
+      "tokensUsed": 14158,
+      "elapsed": 14940,
+      "taskGiven": "User requested a pre-grooming check before next sprint grooming: verify completion status for specific items and ensure unfinished ones are slotted appropriately.\n\nPlease inspect `.pi/chronicle/backlog.json` and do the following:\n1) Check status/completion for:\n   - item-001\n   - item-003\n   - item-004 (user wrote \"04\")\n2) Report whether each is done/in-sprint/pending and whether acceptance criteria appear satisfied based on current backlog state/history fields.\n3) If any of these are not done, adjust backlog prioritization to ensure they are explicitly slotted appropriately for the next sprint (dependency-safe and high enough priority).\n4) If status appears incorrect vs likely completed work, flag it as a data integrity issue and propose exact corrective action.\n5) Write any backlog updates back to canonical `.pi/chronicle/backlog.json` only.\n\nReturn a concise status table and any changes made.",
+      "outputPreview": "Completed. I reviewed the canonical backlog at `.pi/chronicle/backlog.json` and checked items **item-001**, **item-003**, and **item-004**.\n\n### Status Check Table\n\n| Item | Current Status | AC Satisfaction (from backlog/history only) | Assessment |\n|---|---|---|---|\n| item-001 | `in-sprint` | **Not",
+      "exitCode": 0
+    },
+    {
+      "state": "ingestion",
+      "agentName": "backlog-manager",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772133825354,
+      "completedAt": 1772133833847,
+      "summary": "User requested a precise inconsistency list: unfinished items that are numerically earlier than completed items.",
+      "tokensUsed": 10916,
+      "elapsed": 8493,
+      "taskGiven": "User asks: \"what is the full list of items not completed that come numerically before other items that have been completed?\"\n\nPlease inspect `.pi/chronicle/backlog.json` and compute exactly:\n1) Identify all items with `status: done` (completed).\n2) Find every item with status not done (e.g., pending/in-sprint/in-progress/deferred) whose numeric ID is LOWER than at least one done item's numeric ID.\n   - Example rule: if item-010 is done, then item-001..009 that are not done should be included.\n3) Return the full list sorted numerically with each item's current status and priority.\n4) Also include a concise count summary.\n\nDo not modify files; read-only analysis.",
+      "outputPreview": "Completed — I inspected `.pi/chronicle/backlog.json` and computed all **not-done** items whose numeric ID is lower than at least one **done** item.\n\n### Result\nThere are currently **no items with `status: done`** in the backlog.  \nTherefore, by your rule, there are **no qualifying not-completed item",
+      "exitCode": 0
+    }
+  ],
+  "snapshot": {
+    "modifiedFiles": [],
+    "keyFindings": [
+      "Audit complete: item-001, item-003, and item-004 are all currently `in-sprint` in `.pi/chronicle/backlog.json`, not `done`.",
+      "Backlog metadata does not contain completion evidence fields sufficient to verify acceptance-criteria completion from backlog alone.",
+      "No reprioritization needed; these items are already explicitly slotted and dependency-safe in active sequence.",
+      "Potential data integrity gap identified: status may be stale if code is complete but backlog not updated.",
+      "Computed inconsistency query result: no items qualify because backlog currently has zero `done` items.",
+      "By rule (unfinished items numerically before completed items), derived list is empty [].",
+      "Backlog remains likely stale versus code completion if completed work exists but statuses are not updated."
+    ],
+    "pendingTasks": [
+      "If user confirms items are completed in code, run a backlog integrity update to set statuses to `done` and attach completion evidence metadata.",
+      "Then proceed with next-sprint grooming based on corrected statuses.",
+      "If user confirms completed items, perform backlog integrity update to mark done and then recompute sequencing inconsistencies."
+    ],
+    "custom": {}
+  },
+  "transitionCounts": {
+    "ingestion->ingestion": 2
+  },
+  "issueTracker": {
+    "openIssues": {
+      "bg-3 audit completion and slotting for items 001/003/004": {
+        "id": "bg-3 audit completion and slotting for items 001/003/004",
+        "title": "BG-3 Audit completion and slotting for items 001/003/004",
+        "firstSeen": 1772133769198,
+        "lastSeen": 1772133769198,
+        "hits": 1
+      },
+      "bg-4 identify unfinished earlier-numbered items preceding completed items": {
+        "id": "bg-4 identify unfinished earlier-numbered items preceding completed items",
+        "title": "BG-4 Identify unfinished earlier-numbered items preceding completed items",
+        "firstSeen": 1772133825353,
+        "lastSeen": 1772133825353,
+        "hits": 1
+      }
+    },
+    "resolvedIssueIds": [],
+    "lastOpenHash": "bg-3 audit completion and slotting for items 001/003/004|bg-4 identify unfinished earlier-numbered items preceding completed items",
+    "stagnationCount": 0,
+    "lastProgressAt": 1772133825353,
+    "recentTransitions": [
+      {
+        "from": "ingestion",
+        "to": "ingestion",
+        "at": 1772133769198
+      },
+      {
+        "from": "ingestion",
+        "to": "ingestion",
+        "at": 1772133825353
+      }
+    ]
+  },
+  "totalTokens": 25074,
+  "totalElapsed": 23433,
+  "status": "running"
+}

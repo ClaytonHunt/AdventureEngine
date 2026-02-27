@@ -57,6 +57,12 @@
       "sprint_plan_path": ".pi/chronicle/sprint-plan.md",
       "reports_dir": ".pi/chronicle/artifacts/reports",
       "temp_dir": ".pi/chronicle/artifacts/tmp"
+    },
+    "loop_policy": {
+      "_comment": "Semantic loop guard: pause only when repeated bounce shows no issue progress.",
+      "pair_bounce_threshold": 6,
+      "stagnation_threshold": 3,
+      "hard_transition_cap": 12
     }
   }
 }

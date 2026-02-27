@@ -138,6 +138,23 @@ interface Snapshot {
 	custom: Record<string, any>;
 }
 
+interface IssueItem {
+	id: string;
+	title?: string;
+	firstSeen: number;
+	lastSeen: number;
+	hits: number;
+}
+
+interface IssueTracker {
+	openIssues: Record<string, IssueItem>;
+	resolvedIssueIds: string[];
+	lastOpenHash: string;
+	stagnationCount: number;
+	lastProgressAt: number;
+	recentTransitions: Array<{ from: string; to: string; at: number }>;
+}
+
 interface Ledger {
 	id: string;
 	workflowName: string;
@@ -151,6 +168,7 @@ interface Ledger {
 	history: StateRecord[];
 	snapshot: Snapshot;
 	transitionCounts: Record<string, number>;
+	issueTracker: IssueTracker;
 	totalTokens: number;
 	totalElapsed: number;
 	status: "running" | "done" | "paused" | "human_intervention";
@@ -198,6 +216,11 @@ interface ProjectSettings {
 			sprint_plan_path?: string;
 			reports_dir?: string;
 			temp_dir?: string;
+		};
+		loop_policy?: {
+			stagnation_threshold?: number;    // default 3
+			pair_bounce_threshold?: number;   // default 6
+			hard_transition_cap?: number;     // default 12
 		};
 	};
 }
@@ -287,6 +310,10 @@ function buildProjectSettingsBlock(settings: ProjectSettings): string {
 	lines.push(`- reports: ${paths.reportsDir}`);
 	lines.push(`- temp: ${paths.tempDir}`);
 	lines.push("**File policy:** Never create duplicate backlog/sprint files elsewhere. Non-application reports/scripts must be written only under reports/temp directories above.");
+	const lp = settings.chronicle?.loop_policy;
+	if (lp) {
+		lines.push(`**Loop policy:** pair_bounce_threshold=${lp.pair_bounce_threshold ?? 6}, stagnation_threshold=${lp.stagnation_threshold ?? 3}, hard_transition_cap=${lp.hard_transition_cap ?? 12}`);
+	}
 
 	return lines.join("\n");
 }
@@ -1118,6 +1145,98 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
+	function ensureIssueTracker(l: Ledger) {
+		if (!l.issueTracker) {
+			l.issueTracker = {
+				openIssues: {},
+				resolvedIssueIds: [],
+				lastOpenHash: "",
+				stagnationCount: 0,
+				lastProgressAt: Date.now(),
+				recentTransitions: [],
+			};
+		}
+	}
+
+	function normIssueId(raw: string): string {
+		return raw.trim().toLowerCase().replace(/\s+/g, " ");
+	}
+
+	function openIssueHash(openIssues: Record<string, IssueItem>): string {
+		return Object.keys(openIssues).sort().join("|");
+	}
+
+	function applyIssueUpdate(
+		l: Ledger,
+		issuesOpened: string[] | undefined,
+		issuesResolved: string[] | undefined,
+	): { progress: boolean; openedCount: number; resolvedCount: number } {
+		ensureIssueTracker(l);
+		const tr = l.issueTracker;
+		const now = Date.now();
+		const opened = issuesOpened || [];
+		const resolved = issuesResolved || [];
+
+		let openedCount = 0;
+		let resolvedCount = 0;
+
+		for (const raw of opened) {
+			const id = normIssueId(raw);
+			if (!id) continue;
+			const existing = tr.openIssues[id];
+			if (existing) {
+				existing.lastSeen = now;
+				existing.hits += 1;
+			} else {
+				tr.openIssues[id] = { id, title: raw.trim(), firstSeen: now, lastSeen: now, hits: 1 };
+				openedCount += 1;
+			}
+		}
+
+		for (const raw of resolved) {
+			const id = normIssueId(raw);
+			if (!id) continue;
+			if (tr.openIssues[id]) {
+				delete tr.openIssues[id];
+				resolvedCount += 1;
+			}
+			if (!tr.resolvedIssueIds.includes(id)) tr.resolvedIssueIds.push(id);
+		}
+
+		const newHash = openIssueHash(tr.openIssues);
+		const progress = resolvedCount > 0 || openedCount > 0 || newHash !== tr.lastOpenHash;
+
+		if (progress) {
+			tr.stagnationCount = 0;
+			tr.lastProgressAt = now;
+		} else {
+			tr.stagnationCount += 1;
+		}
+		tr.lastOpenHash = newHash;
+		return { progress, openedCount, resolvedCount };
+	}
+
+	function shouldPauseForStagnation(l: Ledger, fromState: string, toState: string): boolean {
+		ensureIssueTracker(l);
+		const tr = l.issueTracker;
+		const now = Date.now();
+		tr.recentTransitions.push({ from: fromState, to: toState, at: now });
+		if (tr.recentTransitions.length > 14) tr.recentTransitions.splice(0, tr.recentTransitions.length - 14);
+
+		const pairBounceThreshold = projectSettings?.chronicle?.loop_policy?.pair_bounce_threshold ?? 6;
+		const stagnationThreshold = projectSettings?.chronicle?.loop_policy?.stagnation_threshold ?? 3;
+
+		const pairCount = tr.recentTransitions.filter(e =>
+			(e.from === fromState && e.to === toState) ||
+			(e.from === toState && e.to === fromState),
+		).length;
+		const openCount = Object.keys(tr.openIssues).length;
+
+		// Pause only for true stagnation: repeated bounce + unchanged open issues.
+		if (pairCount >= pairBounceThreshold && tr.stagnationCount >= stagnationThreshold && openCount > 0) return true;
+		return false;
+	}
+
 	function resolveSupervisorModel(ctx: any): string | null {
 		const m = ctx?.model?.provider && ctx?.model?.id
 			? `${ctx.model.provider}/${ctx.model.id}`
@@ -1164,13 +1283,13 @@ export default function (pi: ExtensionAPI) {
 		name: "workflow_transition",
 		label: "Workflow Transition",
 		description:
-			"Transition the workflow to a new state. Resolves the target state's agent " +
+			"Transition the workflow to a target state. Resolves the state's agent " +
 			"(from .pi/agents/*.md) and any associated skills, then spawns that agent with " +
 			"the full workflow snapshot as context. Waits for completion and returns output. " +
-			"Use workflow_status to see valid next states before calling this.",
+			"You can route to any state for assistance; report issue progress via issues_opened/issues_resolved.",
 		parameters: Type.Object({
 			to_state: Type.String({
-				description: "Target state name (must exist in the workflow definition)",
+				description: "Target state name (must exist in the workflow definition). Assistance hops to any state are allowed.",
 			}),
 			task: Type.String({
 				description: "Specific, detailed task for this state's agent — include all relevant context",
@@ -1178,11 +1297,24 @@ export default function (pi: ExtensionAPI) {
 			summary: Type.String({
 				description: "Summary of what was accomplished in the CURRENT state (saved to the ledger)",
 			}),
+			issues_opened: Type.Optional(Type.Array(Type.String({
+				description: "Issue IDs/titles newly discovered in the current state",
+			}))),
+			issues_resolved: Type.Optional(Type.Array(Type.String({
+				description: "Issue IDs/titles resolved in the current state",
+			}))),
+			assist_reason: Type.Optional(Type.String({
+				description: "Optional reason when routing to a non-next-state assistant hop",
+			})),
 		}),
 
 		async execute(_callId, params, _signal, onUpdate, ctx) {
-			const { to_state, task, summary } = params as {
+			const {
+				to_state, task, summary,
+				issues_opened, issues_resolved, assist_reason,
+			} = params as {
 				to_state: string; task: string; summary: string;
+				issues_opened?: string[]; issues_resolved?: string[]; assist_reason?: string;
 			};
 
 			if (!ledger) {
@@ -1197,10 +1329,46 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			// Anti-loop check
-			const transKey = `${ledger.currentState}->${to_state}`;
+			// Mandatory backlog reconciliation gate: if this workflow defines
+			// `backlog-reconcile`, terminal states (done/commit) must come from it.
+			const hasBacklogReconcile = !!ledger.workflowDef.states["backlog-reconcile"];
+			if (hasBacklogReconcile) {
+				const cameFromReconcile = ledger.currentState === "backlog-reconcile";
+				const everReconciled = ledger.history.some(h => h.state === "backlog-reconcile");
+				const commitBlocked = to_state === "commit" && !cameFromReconcile;
+				const doneBlocked = to_state === "done" && !(cameFromReconcile || (ledger.currentState === "commit" && everReconciled));
+				if (commitBlocked || doneBlocked) {
+					return {
+						content: [{
+							type: "text",
+							text:
+								`Blocked: transition to "${to_state}" requires backlog reconciliation first.\n` +
+								`Route to "backlog-reconcile" to update canonical backlog statuses before terminal states.`,
+						}],
+						details: {
+							status: "reconcile_required",
+							current_state: ledger.currentState,
+							requested_state: to_state,
+						},
+					};
+				}
+			}
+
+			// Semantic loop / issue-progress tracking
+			ensureIssueTracker(ledger);
+			const from_state = ledger.currentState;
+			const currentDef = ledger.workflowDef.states[from_state];
+			const isAssistHop = !!currentDef && !currentDef.next.includes(to_state);
+
+			const transKey = `${from_state}->${to_state}`;
 			ledger.transitionCounts[transKey] = (ledger.transitionCounts[transKey] || 0) + 1;
-			if (ledger.transitionCounts[transKey] > 3) {
+
+			const issueDelta = applyIssueUpdate(ledger, issues_opened, issues_resolved);
+			if (assist_reason) {
+				ledger.snapshot.keyFindings.push(`[Assist hop] ${displayName(from_state)} -> ${displayName(to_state)}: ${assist_reason}`);
+			}
+
+			if (shouldPauseForStagnation(ledger, from_state, to_state)) {
 				ledger.status = "human_intervention";
 				saveLedger(sessDir, ledger);
 				updateWidget();
@@ -1208,11 +1376,43 @@ export default function (pi: ExtensionAPI) {
 					content: [{
 						type: "text",
 						text:
-							`⚠️  Anti-loop triggered: "${transKey}" has cycled ${ledger.transitionCounts[transKey]} times.\n` +
-							`Workflow paused. Use /chronicle-status to inspect the ledger.\n` +
-							`Try a different next state or end the workflow.`,
+							`⚠️  Workflow paused for semantic loop detection.\n` +
+							`Repeated bounce detected with no issue progress.\n\n` +
+							`Transition: ${from_state} -> ${to_state}\n` +
+							`Open issues: ${Object.keys(ledger.issueTracker.openIssues).length}\n` +
+							`Stagnation count: ${ledger.issueTracker.stagnationCount}\n\n` +
+							`Please decide: revise strategy, resolve/close issues, or route to a different helper state.`,
+					}],
+					details: {
+						status: "semantic_loop_pause",
+						from_state,
+						to_state,
+						issue_delta: issueDelta,
+					},
+				};
+			}
+
+			// Keep a very high hard-cap as a final safety net only.
+			const hardTransitionCap = projectSettings?.chronicle?.loop_policy?.hard_transition_cap ?? 12;
+			if (ledger.transitionCounts[transKey] > hardTransitionCap) {
+				ledger.status = "human_intervention";
+				saveLedger(sessDir, ledger);
+				updateWidget();
+				return {
+					content: [{
+						type: "text",
+						text:
+							`⚠️  Hard loop safety cap reached on "${transKey}" (${ledger.transitionCounts[transKey]} transitions).\n` +
+							`Workflow paused.`,
 					}],
 				};
+			}
+
+			if (isAssistHop && onUpdate) {
+				onUpdate({
+					content: [{ type: "text", text: `🔁 Assistance hop: ${displayName(from_state)} -> ${displayName(to_state)}${assist_reason ? ` (${assist_reason})` : ""}` }],
+					details: { status: "assist_hop", from_state, to_state, assist_reason },
+				});
 			}
 
 			// ── Pre-run approval gate ─────────────────────────────────────────
@@ -1792,6 +1992,14 @@ export default function (pi: ExtensionAPI) {
 				history: [],
 				snapshot: { modifiedFiles: [], keyFindings: [], pendingTasks: [], custom: {} },
 				transitionCounts: {},
+				issueTracker: {
+					openIssues: {},
+					resolvedIssueIds: [],
+					lastOpenHash: "",
+					stagnationCount: 0,
+					lastProgressAt: Date.now(),
+					recentTransitions: [],
+				},
 				totalTokens: 0,
 				totalElapsed: 0,
 				status: "running",
@@ -1840,6 +2048,7 @@ export default function (pi: ExtensionAPI) {
 
 			const idx = options.indexOf(choice);
 			ledger = all[idx];
+			ensureIssueTracker(ledger);
 			restoreStateCards(ledger.workflowDef, ledger.history, ledger.currentState);
 			updateWidget();
 
@@ -1988,6 +2197,13 @@ export default function (pi: ExtensionAPI) {
 				lines.push(`Modified files: ${ledger.snapshot.modifiedFiles.length}`);
 			if (ledger.snapshot.pendingTasks.length)
 				lines.push(`Pending tasks: ${ledger.snapshot.pendingTasks.length}`);
+			ensureIssueTracker(ledger);
+			const openIssueIds = Object.keys(ledger.issueTracker.openIssues);
+			lines.push(`Open issues: ${openIssueIds.length}`);
+			if (openIssueIds.length) {
+				lines.push(`Issue IDs: ${openIssueIds.slice(0, 8).join(", ")}${openIssueIds.length > 8 ? " ..." : ""}`);
+			}
+			lines.push(`Issue stagnation count: ${ledger.issueTracker.stagnationCount}`);
 
 			ctx.ui.notify(lines.join("\n"), "info");
 		},
@@ -2090,8 +2306,10 @@ ${ledger.workflowDef.description ? `*${ledger.workflowDef.description}*\n` : ""}
 ## Workflow Map (state [agent] → next: description)
 ${allStates}
 
-## Valid Next States from "${ledger.currentState}"
+## Preferred Next States from "${ledger.currentState}" (guidance)
 ${nextStateList}
+
+You may still route to any other state as an assistance hop when needed.
 
 ## History
 ${histSummary}
@@ -2113,9 +2331,11 @@ Rules:
 - If an agent proposes writing outside these paths for non-application artifacts, redirect it to the canonical directory.
 
 ## Your Tools
-- \`workflow_transition(to_state, task, summary)\`
-  Runs the next state. The agent is resolved automatically from the workflow definition.
+- \`workflow_transition(to_state, task, summary, issues_opened?, issues_resolved?, assist_reason?)\`
+  Runs the target state. The agent is resolved automatically from the workflow definition.
+  You may route to ANY state for assistance (not only listed next states) when needed.
   Include ALL relevant context in \`task\` — agents have no memory beyond what you pass.
+  Report semantic progress each hop via \`issues_opened\` / \`issues_resolved\` so loop detection can distinguish progress vs stagnation.
 - \`workflow_update_snapshot(key_findings, modified_files, pending_tasks, custom)\`
   Save important findings to the persistent ledger BEFORE transitioning.
 - \`workflow_status()\`
@@ -2124,8 +2344,9 @@ Rules:
 ## Workflow Guidelines
 1. Begin by calling \`workflow_transition\` for the initial state with a clear, detailed task
 2. After each state, review the output and save findings with \`workflow_update_snapshot\`
-3. Choose the next state based on the output (states can branch — see "Valid Next States")
-4. Pass all relevant context explicitly in the \`task\` parameter each time
+3. Track issue progress every hop: pass \`issues_opened\` and \`issues_resolved\` in \`workflow_transition\`
+4. Choose the next state based on the output. Preferred next states are guidance; assistance hops to any state are allowed when useful.
+5. Pass all relevant context explicitly in the \`task\` parameter each time
 5. The workflow ends when you reach a terminal state (no valid next states)
 6. If the same two states cycle more than 3 times, the workflow auto-pauses for human review`,
 		};
