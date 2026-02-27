@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "start": "dotnet run --project apps/AppHost",
+    "start:compose": "docker compose up --build",
+    "stop:compose": "docker compose down --remove-orphans",
     "build": "pnpm --filter web build",
     "test": "pnpm --filter web test",
     "test:e2e": "pnpm --filter web test:e2e",
@@ -29,7 +31,8 @@
     "verify:apphost": "node scripts/verify-apphost-port-smoke.mjs",
     "verify:storybook": "node scripts/verify-storybook-sprint4.mjs",
     "verify:perf-budgets": "node scripts/verify-perf-budgets.mjs",
-    "measure:ci-perf": "node scripts/measure-ci-perf.mjs"
+    "measure:ci-perf": "node scripts/measure-ci-perf.mjs",
+    "collect:ci-timing-evidence": "node scripts/collect-ci-timing-evidence.mjs"
   },
   "devDependencies": {
     "ajv": "8.17.1",
