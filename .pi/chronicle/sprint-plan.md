@@ -1,81 +1,87 @@
-# Sprint Plan — 2026-02-26
+# Sprint Plan — 2026-02-27
 
 **Capacity:** 8pt total · 6.4pt effective (20% buffer)
 **Sprint Length:** 10 days
-**Total Planned:** 6pt across 3 items
+**Total Planned:** 6pt across 4 items
 
 ---
 
 ## Sprint Goal
-Unblock the frontend-to-CI dependency chain by delivering the foundational web scaffold, Storybook baseline, and Playwright smoke coverage required for root orchestration and downstream CI/performance work.
+Establish reliable root-level developer/CI workflow orchestration and baseline onboarding documentation while keeping dependency flow unblocked for subsequent CI performance enforcement work.
 
 ## Sprint Items
 
-### 1. item-006 — Scaffold React Vite app with TypeScript, path aliases, ESLint, and Prettier
+### 1. item-010 — Wire root orchestration scripts for single-command start and test
 **Type:** chore | **Size:** medium | **Points:** 2
-**Description:** As a frontend developer, establish the `apps/web` React+Vite TypeScript foundation with aliasing and lint/format standards so all downstream frontend and automation work can proceed.
+**Description:** As a developer, implement root `package.json` scripts (`start`, `test`, `test:e2e`, `test:api`, `storybook`, `build`) so all key workflows run from repo root.
 
 **Acceptance Criteria:**
-- Given `pnpm --filter web dev` (or `pnpm start` at the root), when executed, then the Vite dev server starts and `http://localhost:5173` (or configured port) serves the React app without errors.
-- Given a TypeScript file that uses the `@/` path alias, when Vite builds and TS language server resolves it, then imports resolve in both `vite.config.ts` and `tsconfig.json`.
-- Given `pnpm --filter web lint`, when run, then ESLint reports zero errors on fresh scaffold.
-- Given Prettier config exists, when running `prettier --check .`, then files pass formatting checks.
-- Given `pnpm --filter web build`, when run, then production bundle is produced with zero TS compilation errors.
+- Given `pnpm start` at the repo root, when run, then the .NET Aspire AppHost and the React Vite dev server both start concurrently, each logging to the terminal with a distinguishable prefix, and a Ctrl+C stops both.
+- Given `pnpm test` at the repo root, when run in CI (no watch mode, `--ci` flag passed to Vitest), then Vitest runs all frontend unit and component tests and exits with the correct code (0 on pass, non-zero on failure).
+- Given `pnpm test:e2e` at the repo root, when run, then Playwright executes e2e tests and exits with the correct code.
+- Given `pnpm test:api` at the repo root, when run, then `dotnet test` is invoked for all .NET test projects and exits with the correct code.
+- Given `pnpm storybook` at the repo root, when run, then Storybook starts at port 6006 without errors.
+- Given `pnpm build` at the repo root, when run, then both the Vite frontend production build and the .NET API `dotnet publish` complete successfully and exit 0.
 
-**Dependencies:** item-001 (already in-sprint, prerequisite available)
+**Dependencies:** item-003, item-004, item-006, item-007, item-008, item-009 (all resolved)
 
 ---
 
-### 2. item-008 — Set up Storybook with a baseline Button component and story
+### 2. item-016 — Add GitHub Actions CI pipeline running all test suites
 **Type:** chore | **Size:** medium | **Points:** 2
-**Description:** Configure Storybook in `apps/web` with baseline component stories to establish component-catalog workflow and enable downstream root script wiring/perf instrumentation.
+**Description:** Add `.github/workflows/ci.yml` for push/PR to `main`, running install, test, API test, and build.
 
 **Acceptance Criteria:**
-- Given `pnpm --filter web storybook` (or `pnpm storybook`), when run, then Storybook starts at default port 6006.
-- Given `Button` and `Button.stories.tsx`, when viewed, then at least `Default` and `Disabled` stories render without console errors.
-- Given story files, when inspected, then stories are co-located and use CSF3 syntax.
-- Given `pnpm --filter web build-storybook`, when run, then static build completes to `storybook-static/` with exit code 0.
-- Given Storybook config, when inspected, then Vite builder and `@/` alias resolution are configured.
+- Given a push or pull request to the `main` branch, when the GitHub Actions workflow runs, then it executes `pnpm install`, `pnpm test` (Vitest), and `pnpm test:api` (dotnet test) in sequence and fails the build if any step exits non-zero.
+- Given the workflow file, when inspected, then it sets up both the Node.js runtime (matching `.nvmrc`) and the .NET SDK (matching the project's target framework) before running any commands.
+- Given the CI run, when `pnpm test:api` executes, then the `dotnet test` command includes `--no-restore` and `--logger trx` to avoid redundant restores and produce a parseable test results file.
+- Given the CI run, when all steps pass, then `pnpm build` (Vite production build) is also executed to verify the frontend compiles cleanly.
+- Given the workflow, when inspected, then it caches the `pnpm store` and the `.nuget/packages` directories to reduce CI run time on subsequent runs.
 
-**Dependencies:** item-006 (selected in this sprint; dependency resolved in-sequence)
+**Dependencies:** item-010 (resolved in-sprint sequence)
 
 ---
 
-### 3. item-009 — Configure Playwright e2e suite with one smoke test
-**Type:** chore | **Size:** medium | **Points:** 2
-**Description:** Add co-located Playwright e2e smoke coverage for the web app to validate rendering pipeline and unlock root command orchestration + CI follow-on work.
+### 3. item-011 — Add .env.example with all required environment variables documented
+**Type:** chore | **Size:** small | **Points:** 1
+**Description:** Add root `.env.example` documenting required env vars with safe defaults for successful local startup.
 
 **Acceptance Criteria:**
-- Given `pnpm test:e2e`, when run against running app, then smoke test executes and exits 0.
-- Given smoke test execution, when page loads, then visible `<h1>` heading assertion passes using locator-based wait.
-- Given Playwright config, when inspected, then `baseURL` is env-driven with default `http://localhost:5173`.
-- Given CI headless environment, when tests run, then Chromium headless project executes without browser install prompts.
-- Given test failure, when reported, then screenshot + trace are saved under `apps/web/test-results/`.
+- Given `.env.example` at the repo root, when inspected, then every environment variable consumed by any app in the monorepo is listed with an inline comment describing its purpose.
+- Given `.env.example`, when a developer copies it to `.env` without changing any values, then `pnpm start` runs without crashing due to missing environment variables (i.e., all required vars have safe defaults).
+- Given `.gitignore`, when inspected, then `.env` and `.env.local` are excluded but `.env.example` is tracked.
+- Given the `.env.example` file, when inspected, then it includes at minimum: `VITE_API_BASE_URL`, `ASPNETCORE_ENVIRONMENT`, `ASPNETCORE_URLS`, `ASPNETCORE_HTTP_PORTS`, and `AllowedOrigins` (from item-015 CORS configuration).
 
-**Dependencies:** item-006 (selected in this sprint; dependency resolved in-sequence)
+**Dependencies:** item-004, item-006, item-015 (all resolved)
 
 ---
 
-## Dependency Sequence (execution workflow)
-1. **item-006** → establish `apps/web` foundation and alias/tooling.
-2. **item-008** + **item-009** (parallelizable after item-006 completes) → unblock **item-010** root orchestration scripts.
-3. Next-sprint chain enabled by this sprint: **item-010** → **item-016** → (**item-017**, **item-018**) → **item-019**.
+### 4. item-013 — Write README with Getting Started, prerequisites, and all dev commands
+**Type:** chore | **Size:** small | **Points:** 1
+**Description:** Author comprehensive root README for prerequisites, startup paths, scripts, and contributor onboarding.
+
+**Acceptance Criteria:**
+- Given the README, when read by a developer unfamiliar with the project, then the Prerequisites section lists all required tools with minimum versions: Node.js, pnpm, .NET SDK, .NET Aspire workload, Docker (optional), and includes the `dotnet dev-certs https --trust` command as a required one-time setup step.
+- Given the README Getting Started section, when followed step-by-step from a fresh clone, then the developer can run `pnpm install && pnpm start` and have the app running within the documented steps.
+- Given the README, when inspected, then it documents every root `package.json` script (`start`, `test`, `test:e2e`, `test:api`, `storybook`, `build`) with a one-line description of what each does.
+- Given the README, when inspected, then it includes a project structure section showing the top-level folder layout and explaining the purpose of each major directory (`apps/`, `packages/`, `.github/`) — note: Playwright tests are co-located at `apps/web/e2e/`, not a top-level `e2e/` directory.
+- Given the README, when inspected, then it has a dedicated section explaining when to use Aspire (`pnpm start`) vs Docker Compose (`docker compose up --build`) for local development.
+- Given the README, when inspected, then it includes a link to or inline copy of the project Definition of Done for contributing developers.
+
+**Dependencies:** item-010, item-011, item-012, item-016 (item-010/011/016 resolved in-sprint sequence; item-012 pending and makes this dependency unresolved for completion)
+
+---
 
 ## Deferred (did not fit)
-Ready items not planned due to effective capacity limit:
-- item-010 Wire root orchestration scripts for single-command start and test (medium, 2pt) — blocked from fit after selecting highest-priority unblock trio; first candidate next sprint.
-- item-011 Add .env.example with all required environment variables documented (small, 1pt) — fits only if 1pt slack existed; queued after item-010 because orchestration dependencies dominate.
-- item-012 Add Docker Compose alternative local start for non-Aspire environments (medium, 2pt) — lower dependency leverage than orchestration chain in this sprint.
-- item-013 Write README with Getting Started, prerequisites, and all dev commands (small, 1pt) — documentation should follow completed implementation items.
+Items that were ready but didn't fit in capacity:
+- None (selected ready items totaled 6pt within 6.4pt effective capacity)
 
 ## Blocked (not ready)
-Items not plannable this sprint due to unresolved dependency chain (not readiness quality issues):
-- item-017 Spike and define strict CI performance budgets — unresolved dependency on item-010 and item-016.
-- item-018 Instrument startup and Storybook timing checks for CI — unresolved dependency on item-010 and item-017 (and item-008 completion).
-- item-016 Add GitHub Actions CI pipeline running all test suites — unresolved dependency on item-010.
-- item-019 Enforce hard CI perf gates for startup, pipeline, and Storybook — unresolved dependency on item-016, item-017, and item-018.
+Items that cannot be planned yet:
+- item-019 Enforce hard CI perf gates for startup, pipeline, and Storybook — reason: unresolved dependency on item-018 (and item-016/item-017 chain)
+- item-012 Add Docker Compose alternative local start for non-Aspire environments — reason: not selected this sprint; dependency chain impact on item-013 completion
 
 ## Backlog Summary After Planning
-- In-sprint: 8 items, 15pt (including previously in-sprint items)
-- Remaining pending: 7 items, 12pt
-- Estimated sprints to clear pending backlog at 6.4pt effective: ~2
+- In-sprint: 9 items, 15pt
+- Remaining pending: 3 items, 5pt
+- Estimated sprints to clear backlog: ~1
