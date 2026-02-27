@@ -39,7 +39,7 @@ jobs:
           corepack prepare pnpm@10.17.0 --activate
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@0d6e3b9b2f4fbd5d7795b8d03f7057e6f9f2e1c5 # v4.0.0
+        uses: actions/setup-dotnet@5bbd146f2143f5ecb54a29a909016819640ece85 # v4.3.1
         with:
           global-json-file: global.json
 
