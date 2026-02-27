@@ -164,9 +164,9 @@
     }
   },
   "created": 1772176236606,
-  "lastUpdated": 1772206328772,
-  "currentState": "done",
-  "currentStateTask": "Summarize continuation progress: manual workflow trigger was added and committed to unblock Actions generation for item-016 evidence. Include commit hash, what remains blocked, and exact next user actions in GitHub UI to run baseline/after workflows and then finalize item-016 closure.",
+  "lastUpdated": 1772207080473,
+  "currentState": "commit",
+  "currentStateTask": "Create a scoped conventional commit for the workflow fix only: `.github/workflows/perf-budget-gate.yml` updating deprecated `actions/cache` pin to current v4.2.2 pinned SHA. Exclude unrelated files. This commit should unblock GitHub perf-gate runs for item-016 evidence generation.",
   "initialTask": "",
   "history": [
     {
@@ -831,6 +831,58 @@
       "taskGiven": "Summarize continuation progress: manual workflow trigger was added and committed to unblock Actions generation for item-016 evidence. Include commit hash, what remains blocked, and exact next user actions in GitHub UI to run baseline/after workflows and then finalize item-016 closure.",
       "outputPreview": "## Continuation Progress Summary (Item-016 Unblock)\n\nManual triggering support was successfully added to the CI workflow and committed, so you can now generate the missing GitHub Actions timing runs required for item-016 closure.\n\n### ✅ What was accomplished\n- Added `workflow_dispatch` to:\n  - `.git",
       "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772206943278,
+      "completedAt": 1772206961791,
+      "summary": "User confirmed manual workflow has been run; starting evidence collection/update to close item-016.",
+      "tokensUsed": 2058,
+      "elapsed": 18512,
+      "taskGiven": "Now that GitHub workflow runs exist, execute item-016 evidence closure flow: run `pnpm run collect:ci-timing-evidence` (use `ITEM016_AFTER_SHA` if needed to separate after cohort), inspect generated dataset, and update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md` with non-zero baseline/after sample counts, median, p90, deltas, and run links/evidence summary. If samples are still insufficient, document exact gap and remain open. Keep scope limited to item-016 evidence/report closure.",
+      "outputPreview": "Executed now and verified the result.\n\n### What I ran\n\n```bash\npnpm run collect:ci-timing-evidence\n```\n\nOutput:\n\n```text\n> adventure-engine@ collect:ci-timing-evidence D:\\projects\\AdventureEngine\n> node scripts/collect-ci-timing-evidence.mjs\n\nWrote D:\\projects\\AdventureEngine\\.pi\\chronicle\\artifacts",
+      "exitCode": 0
+    },
+    {
+      "state": "implementation",
+      "agentName": "builder",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772207019423,
+      "completedAt": 1772207031476,
+      "summary": "User reported workflow failure: deprecated actions/cache pin is blocked by GitHub; routing implementation fix for perf-gate workflow.",
+      "tokensUsed": 1178,
+      "elapsed": 12053,
+      "taskGiven": "Patch `.github/workflows/perf-budget-gate.yml` to replace deprecated `actions/cache` pinned commit (`0c45773b...`) with a current v4-compatible pinned commit SHA. Preserve existing least-privilege/security hardening and workflow behavior. Keep change minimal and scoped. After editing, provide the exact updated `uses:` line(s) and brief rerun instructions so user can trigger workflow again and proceed with item-016 timing evidence collection.",
+      "outputPreview": "Patched successfully with a minimal, scoped change.\n\n### ✅ Updated file\n- `.github/workflows/perf-budget-gate.yml`\n\n### Exact updated `uses:` line\n```yaml\nuses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.2.2\n```\n\n(Previous deprecated SHA `0c45773b...` was replaced.)\n\n### Security/ha",
+      "exitCode": 0
+    },
+    {
+      "state": "backlog-reconcile",
+      "agentName": "backlog-reconciler",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772207042216,
+      "completedAt": 1772207052745,
+      "summary": "Applied workflow fix for deprecated actions/cache pin; routing through required backlog-reconcile checkpoint before commit.",
+      "tokensUsed": 11218,
+      "elapsed": 10528,
+      "taskGiven": "Perform deterministic no-op backlog reconciliation after cache-pin workflow fix. Expected: no status changes; item-016 remains in-progress pending timing evidence. Confirm clear to proceed to commit.",
+      "outputPreview": "### Applied transitions\n- None.\n\n### Unchanged items\n- `item-001` stayed `in-sprint` — `NO_MATCH` (not a reconciliation candidate in this task context; no new verification evidence provided for completion in this pass).\n- `item-003` stayed `in-sprint` — `NO_MATCH` (no new explicit completion evidenc",
+      "exitCode": 0
+    },
+    {
+      "state": "commit",
+      "agentName": "git-ops",
+      "modelUsed": "openai-codex/gpt-5.3-codex",
+      "startedAt": 1772207059661,
+      "completedAt": 1772207080473,
+      "summary": "Backlog no-op reconciliation complete; proceeding to commit cache-pin workflow fix.",
+      "tokensUsed": 943,
+      "elapsed": 20811,
+      "taskGiven": "Create a scoped conventional commit for the workflow fix only: `.github/workflows/perf-budget-gate.yml` updating deprecated `actions/cache` pin to current v4.2.2 pinned SHA. Exclude unrelated files. This commit should unblock GitHub perf-gate runs for item-016 evidence generation.",
+      "outputPreview": "Done — I created the scoped commit for the workflow fix only.\n\n### What I accomplished\n- Ran `git status` first (as required) and confirmed there were unrelated modified/untracked files.\n- Verified the workflow file contains the cache pin update.\n- Ran tests via:\n  - `npm test -- --run 2>&1 | tail` ",
+      "exitCode": 0
     }
   ],
   "snapshot": {
@@ -944,7 +996,12 @@
       "Added `workflow_dispatch` trigger to `.github/workflows/perf-budget-gate.yml` so workflow can be run manually from GitHub UI when no automatic runs exist.",
       "Existing workflow hardening remains intact; change is minimal trigger expansion only.",
       "Item-016 remains blocked until manual GitHub runs are executed and timing evidence is collected.",
-      "[Assist hop] Implementation -> Backlog Reconcile: Workflow guard requires reconciliation before commit; perform no-op status check for this tooling-only change."
+      "[Assist hop] Implementation -> Backlog Reconcile: Workflow guard requires reconciliation before commit; perform no-op status check for this tooling-only change.",
+      "[Assist hop] Done -> Implementation: User confirmed workflow has been run; proceed to collect real timing data and close item-016.",
+      "[Assist hop] Implementation -> Implementation: User reported GitHub run failure due to deprecated pinned actions/cache commit; need workflow patch to current v4 pin.",
+      "Patched `.github/workflows/perf-budget-gate.yml` to replace deprecated `actions/cache` pin with v4.2.2 pinned SHA `0057852bfaa89a56745cba8c7296529d2fc39830`.",
+      "Workflow security posture preserved; change is minimal and targeted to unblock perf-gate runs for item-016 evidence.",
+      "[Assist hop] Implementation -> Backlog Reconcile: Workflow guard requires reconciliation before commit even for tooling-only workflow fix."
     ],
     "pendingTasks": [
       "Run pre-implementation specialist review gates for this scoped sprint before coding.",
@@ -1011,7 +1068,9 @@
       "Keep item-016 in-progress until successful `perf-budget-gate.yml` baseline/after runs exist.",
       "Once GH runs exist, rerun collector (optionally with `ITEM016_AFTER_SHA`) and update `.pi/chronicle/artifacts/reports/item-016-ci-timing-evidence.md`, then reconcile backlog to done.",
       "Commit workflow trigger change.",
-      "Run manual GitHub Actions baseline/after runs, then rerun timing collector and update item-016 evidence report/backlog status."
+      "Run manual GitHub Actions baseline/after runs, then rerun timing collector and update item-016 evidence report/backlog status.",
+      "Commit workflow cache-pin fix and push so GitHub Actions can run.",
+      "Re-run perf-budget-gate baseline/after runs, then rerun timing collector and update item-016 evidence report."
     ],
     "custom": {}
   },
@@ -1031,18 +1090,18 @@
     "implementation->performance-validation": 1,
     "performance-validation->verification": 1,
     "verification->backlog-reconcile": 3,
-    "backlog-reconcile->commit": 5,
+    "backlog-reconcile->commit": 6,
     "commit->done": 5,
     "done->planning": 2,
     "planning->implementation": 3,
     "implementation->verification": 3,
-    "done->implementation": 2,
-    "implementation->implementation": 8,
+    "done->implementation": 3,
+    "implementation->implementation": 9,
     "verification->verification": 6,
     "verification->implementation": 1,
     "implementation->planning": 2,
     "planning->backlog-reconcile": 1,
-    "implementation->backlog-reconcile": 1
+    "implementation->backlog-reconcile": 2
   },
   "issueTracker": {
     "openIssues": {
@@ -1094,6 +1153,20 @@
         "firstSeen": 1772205810158,
         "lastSeen": 1772205810158,
         "hits": 1
+      },
+      "need to convert new gh workflow runs into item-016 baseline/after timing evidence and closure decision": {
+        "id": "need to convert new gh workflow runs into item-016 baseline/after timing evidence and closure decision",
+        "title": "Need to convert new GH workflow runs into item-016 baseline/after timing evidence and closure decision",
+        "firstSeen": 1772206943278,
+        "lastSeen": 1772206943278,
+        "hits": 1
+      },
+      "workflow run blocked by deprecated actions/cache pin preventing item-016 evidence generation": {
+        "id": "workflow run blocked by deprecated actions/cache pin preventing item-016 evidence generation",
+        "title": "Workflow run blocked by deprecated actions/cache pin preventing item-016 evidence generation",
+        "firstSeen": 1772207019422,
+        "lastSeen": 1772207019422,
+        "hits": 1
       }
     },
     "resolvedIssueIds": [
@@ -1122,30 +1195,10 @@
       "stepwise verification execution for 012/013 closure",
       "need step 6+7 evidence to finalize closure decision for item-012/item-013"
     ],
-    "lastOpenHash": "implement item-012 to unblock final closure of item-013|need closure plan for remaining in-progress items 016 and 013|need dependency gate decision for item-013 vs item-012 before implementation|need execution plan to complete item-012 and close item-013|need final closure path for item-016 once gh timing data becomes available|need to close final open item-016 by attaching real gh actions timing evidence|no visible github actions runs; item-016 evidence pipeline cannot produce data until workflow executes",
-    "stagnationCount": 3,
-    "lastProgressAt": 1772205810158,
+    "lastOpenHash": "implement item-012 to unblock final closure of item-013|need closure plan for remaining in-progress items 016 and 013|need dependency gate decision for item-013 vs item-012 before implementation|need execution plan to complete item-012 and close item-013|need final closure path for item-016 once gh timing data becomes available|need to close final open item-016 by attaching real gh actions timing evidence|need to convert new gh workflow runs into item-016 baseline/after timing evidence and closure decision|no visible github actions runs; item-016 evidence pipeline cannot produce data until workflow executes|workflow run blocked by deprecated actions/cache pin preventing item-016 evidence generation",
+    "stagnationCount": 2,
+    "lastProgressAt": 1772207019422,
     "recentTransitions": [
-      {
-        "from": "implementation",
-        "to": "implementation",
-        "at": 1772202766914
-      },
-      {
-        "from": "implementation",
-        "to": "implementation",
-        "at": 1772202782722
-      },
-      {
-        "from": "implementation",
-        "to": "planning",
-        "at": 1772202804981
-      },
-      {
-        "from": "planning",
-        "to": "implementation",
-        "at": 1772202820998
-      },
       {
         "from": "implementation",
         "to": "implementation",
@@ -1195,10 +1248,30 @@
         "from": "commit",
         "to": "done",
         "at": 1772206317507
+      },
+      {
+        "from": "done",
+        "to": "implementation",
+        "at": 1772206943278
+      },
+      {
+        "from": "implementation",
+        "to": "implementation",
+        "at": 1772207019422
+      },
+      {
+        "from": "implementation",
+        "to": "backlog-reconcile",
+        "at": 1772207042216
+      },
+      {
+        "from": "backlog-reconcile",
+        "to": "commit",
+        "at": 1772207056477
       }
     ]
   },
-  "totalTokens": 293183,
-  "totalElapsed": 6049203,
-  "status": "done"
+  "totalTokens": 308580,
+  "totalElapsed": 6111107,
+  "status": "running"
 }
